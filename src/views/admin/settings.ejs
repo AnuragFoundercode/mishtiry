@@ -1,0 +1,112 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">⚙️ Platform Charge & Revenue Settings</div>
+      <div class="card-body">
+        <div class="alert alert-info small py-2 mb-4">
+          💡 <strong>Platform Charge</strong> is added on top of service price (paid by user). <strong>GST</strong> is calculated on platform charge only. <strong>Commission</strong> is deducted from vendor payout.
+        </div>
+        <form method="POST" action="/admin/settings">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">🏷️ Platform Charge %</label>
+              <div class="input-group">
+                <input type="number" name="platform_charge_percent" class="form-control" step="0.01" min="0" max="100" value="<%= settings.platform_charge_percent %>" required/>
+                <span class="input-group-text">%</span>
+              </div>
+              <small class="text-muted">Charged to user on every booking</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">🧾 GST %</label>
+              <div class="input-group">
+                <input type="number" name="gst_percent" class="form-control" step="0.01" min="0" max="100" value="<%= settings.gst_percent %>" required/>
+                <span class="input-group-text">%</span>
+              </div>
+              <small class="text-muted">Applied on platform charge only</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">💸 Default Commission %</label>
+              <div class="input-group">
+                <input type="number" name="default_commission_percent" class="form-control" step="0.01" min="0" max="100" value="<%= settings.default_commission_percent %>" required/>
+                <span class="input-group-text">%</span>
+              </div>
+              <small class="text-muted">Used for vendors without custom commission</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">🔀 Default Revenue Model</label>
+              <select name="default_revenue_model" class="form-select" required>
+                <option value="commission" <%= settings.default_revenue_model==='commission'?'selected':'' %>>💸 Commission</option>
+                <option value="subscription" <%= settings.default_revenue_model==='subscription'?'selected':'' %>>📦 Subscription</option>
+                <option value="hybrid" <%= settings.default_revenue_model==='hybrid'?'selected':'' %>>🔀 Hybrid</option>
+              </select>
+              <small class="text-muted">Default for new vendors</small>
+            </div>
+            <div class="col-12 mt-2">
+              <button type="submit" class="btn btn-primary px-4">💾 Save Settings</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <!-- Live Preview -->
+    <div class="card mb-3">
+      <div class="card-header">🧮 Live Charge Preview</div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label small">Enter Service Price (₹)</label>
+          <input type="number" id="previewPrice" class="form-control" value="1000" oninput="calcPreview()"/>
+        </div>
+        <div id="previewResult" class="mt-3"></div>
+      </div>
+    </div>
+
+    <!-- Change Password Card -->
+    <div class="card">
+      <div class="card-body d-flex align-items-center gap-3">
+        <div style="font-size:2rem">🔑</div>
+        <div>
+          <div class="fw-semibold">Change Admin Password</div>
+          <small class="text-muted">Click the key icon in the top-right corner</small>
+        </div>
+        <button class="btn btn-sm btn-outline-primary ms-auto" data-bs-toggle="modal" data-bs-target="#changePwdModal">
+          Change →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const pc = parseFloat('<%= settings.platform_charge_percent %>');
+const gc = parseFloat('<%= settings.gst_percent %>');
+const cc = parseFloat('<%= settings.default_commission_percent %>');
+
+function calcPreview() {
+  const price = parseFloat(document.getElementById('previewPrice').value) || 0;
+  const platformCharge = +(price * pc / 100).toFixed(2);
+  const gst = +(platformCharge * gc / 100).toFixed(2);
+  const total = +(price + platformCharge + gst).toFixed(2);
+  const commission = +(price * cc / 100).toFixed(2);
+  const vendorPayout = +(price - commission).toFixed(2);
+  document.getElementById('previewResult').innerHTML = `
+    <table class="table table-sm table-bordered mb-0">
+      <tr><td>🛒 Service Price</td><td class="text-end fw-semibold">₹${price.toFixed(2)}</td></tr>
+      <tr><td>🏷️ Platform Charge (${pc}%)</td><td class="text-end text-warning">+ ₹${platformCharge}</td></tr>
+      <tr><td>🧾 GST on Platform (${gc}%)</td><td class="text-end text-info">+ ₹${gst}</td></tr>
+      <tr class="table-success"><td><strong>💳 User Pays</strong></td><td class="text-end fw-bold">₹${total}</td></tr>
+      <tr><td>💸 Commission (${cc}%)</td><td class="text-end text-danger">- ₹${commission}</td></tr>
+      <tr class="table-primary"><td><strong>🏪 Vendor Gets</strong></td><td class="text-end fw-bold">₹${vendorPayout}</td></tr>
+    </table>`;
+}
+calcPreview();
+</script>
+
+<%- include('partials/footer') %>

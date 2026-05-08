@@ -1,0 +1,63 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <span>📅 Bookings <span class="badge bg-primary ms-1"><%= total %></span></span>
+    <div class="d-flex gap-1 flex-wrap">
+      <a href="/admin/bookings" class="btn btn-sm <%= !status?'btn-primary':'btn-outline-secondary' %>">All</a>
+      <a href="/admin/bookings?status=pending" class="btn btn-sm <%= status==='pending'?'btn-warning':'btn-outline-warning' %>">⏳ Pending</a>
+      <a href="/admin/bookings?status=accepted" class="btn btn-sm <%= status==='accepted'?'btn-info':'btn-outline-info' %>">✅ Accepted</a>
+      <a href="/admin/bookings?status=in_progress" class="btn btn-sm <%= status==='in_progress'?'btn-primary':'btn-outline-primary' %>">🔄 In Progress</a>
+      <a href="/admin/bookings?status=completed" class="btn btn-sm <%= status==='completed'?'btn-success':'btn-outline-success' %>">🎉 Completed</a>
+      <a href="/admin/bookings?status=cancelled" class="btn btn-sm <%= status==='cancelled'?'btn-danger':'btn-outline-danger' %>">❌ Cancelled</a>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>#ID</th><th>User</th><th>Vendor</th><th>Service</th><th>Date</th><th>Amount</th><th>Commission</th><th>Status</th><th>Payment</th></tr></thead>
+      <tbody>
+      <% bookings.forEach(b => { %>
+        <tr>
+          <td class="text-muted small">#<%= b.id %></td>
+          <td><%= b.User?.name||'—' %><br><small class="text-muted">📱 <%= b.User?.mobile %></small></td>
+          <td>🏪 <%= b.Vendor?.business_name||'—' %></td>
+          <td>🔧 <%= b.Service?.name||'—' %></td>
+          <td class="small"><%= formatDate(b.booking_date) %></td>
+          <td>
+            <div class="fw-semibold">₹<%= parseFloat(b.total_amount||0).toFixed(0) %></div>
+            <small class="text-muted">Base: ₹<%= parseFloat(b.amount||0).toFixed(0) %></small>
+          </td>
+          <td>
+            <div class="text-success fw-semibold">₹<%= parseFloat(b.commission_amount||0).toFixed(0) %></div>
+            <small class="text-muted"><%= b.commission_percent_applied||0 %>%</small>
+          </td>
+          <td>
+            <% const sc={pending:'warning',accepted:'info',in_progress:'primary',completed:'success',cancelled:'danger'};
+               const se={pending:'⏳',accepted:'✅',in_progress:'🔄',completed:'🎉',cancelled:'❌'}; %>
+            <span class="badge bg-<%= sc[b.status]||'secondary' %>"><%= se[b.status] %> <%= b.status %></span>
+          </td>
+          <td>
+            <% const pc={pending:'secondary',paid:'success',refunded:'warning'}; %>
+            <span class="badge bg-<%= pc[b.payment_status]||'secondary' %>"><%= b.payment_status %></span>
+          </td>
+        </tr>
+      <% }) %>
+      <% if(!bookings.length){ %><tr><td colspan="9" class="text-center text-muted py-4">No bookings found</td></tr><% } %>
+      </tbody>
+    </table>
+  </div>
+  <% if(pages>1){ %>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <small class="text-muted">Showing <%= (currentPage-1)*15+1 %>–<%= Math.min(currentPage*15,total) %> of <%= total %></small>
+    <nav><ul class="pagination pagination-sm mb-0">
+      <% for(let p=1;p<=pages;p++){ %>
+        <li class="page-item <%= p==currentPage?'active':'' %>"><a class="page-link" href="?page=<%= p %>&status=<%= status %>"><%= p %></a></li>
+      <% } %>
+    </ul></nav>
+  </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

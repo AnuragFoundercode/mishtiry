@@ -1,0 +1,363 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+
+<!-- Page Header -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+  <a href="/admin/vendors" class="btn btn-sm btn-light">← Back</a>
+  <h5 class="mb-0 fw-bold">🏪 <%= vendor.business_name || 'Unnamed Vendor' %></h5>
+  <% if(vendor.is_suspended){ %><span class="badge bg-danger">🚫 Suspended</span>
+  <% } else if(vendor.is_approved){ %><span class="badge bg-success">✅ Approved</span>
+  <% } else { %><span class="badge bg-secondary">⏸️ Pending</span><% } %>
+  <% if(vendor.is_featured){ %><span class="badge bg-warning text-dark">⭐ Featured</span><% } %>
+  <div class="ms-auto d-flex gap-2">
+    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">✏️ Edit Profile</button>
+    <form method="POST" action="/admin/vendors/<%= vendor.id %>/toggle-featured">
+      <button class="btn btn-sm <%= vendor.is_featured?'btn-warning':'btn-outline-warning' %>">
+        <%= vendor.is_featured ? '⭐ Remove Featured' : '⭐ Mark Featured' %>
+      </button>
+    </form>
+    <form method="POST" action="/admin/vendors/<%= vendor.id %>/toggle-suspend">
+      <button class="btn btn-sm <%= vendor.is_suspended?'btn-success':'btn-danger' %>" onclick="return confirm('Are you sure?')">
+        <%= vendor.is_suspended ? '✅ Unsuspend' : '🚫 Suspend' %>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div style="font-size:1.8rem">📅</div>
+      <h5 class="mb-0 fw-bold mt-1"><%= totalBookings %></h5>
+      <small class="text-muted">Total Bookings</small>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div style="font-size:1.8rem">💰</div>
+      <h5 class="mb-0 fw-bold mt-1">₹<%= parseFloat(totalEarnings).toFixed(0) %></h5>
+      <small class="text-muted">Total Earnings</small>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div style="font-size:1.8rem">⭐</div>
+      <h5 class="mb-0 fw-bold mt-1"><%= vendor.avg_rating || '0.0' %></h5>
+      <small class="text-muted">Avg Rating</small>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card text-center py-3">
+      <div style="font-size:1.8rem">💬</div>
+      <h5 class="mb-0 fw-bold mt-1"><%= vendor.total_reviews || 0 %></h5>
+      <small class="text-muted">Reviews</small>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- LEFT -->
+  <div class="col-lg-6">
+
+    <!-- Basic Info -->
+    <div class="card mb-3">
+      <div class="card-header">📋 Business Info</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tr><td class="text-muted ps-3" width="38%">Owner</td><td><%= vendor.User?.name||'—' %></td></tr>
+          <tr><td class="text-muted ps-3">Mobile</td><td>📱 <%= vendor.User?.mobile||'—' %></td></tr>
+          <tr><td class="text-muted ps-3">Email</td><td>📧 <%= vendor.User?.email||'—' %></td></tr>
+          <tr><td class="text-muted ps-3">Address</td><td><%= vendor.address||'—' %></td></tr>
+          <tr><td class="text-muted ps-3">Joined</td><td><%= formatDate(vendor.created_at || vendor.createdAt) %></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- KYC -->
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>🪪 KYC Documents</span>
+        <% const kc={pending:'secondary',under_review:'warning',approved:'success',rejected:'danger'};
+           const ke={pending:'⏸️',under_review:'⏳',approved:'✅',rejected:'❌'}; %>
+        <span class="badge bg-<%= kc[vendor.kyc_status] %>"><%= ke[vendor.kyc_status] %> <%= vendor.kyc_status %></span>
+      </div>
+      <div class="card-body">
+        <% if(vendor.VendorKyc){ const k=vendor.VendorKyc; %>
+          <div class="row g-2 mb-3">
+            <div class="col-6"><small class="text-muted d-block">Aadhaar</small><strong><%= k.aadhaar_number||'—' %></strong></div>
+            <div class="col-6"><small class="text-muted d-block">PAN</small><strong><%= k.pan_number||'—' %></strong></div>
+            <div class="col-12"><small class="text-muted d-block">GST</small><strong><%= k.gst_number||'Not provided' %></strong></div>
+          </div>
+          <div class="d-flex gap-2 flex-wrap mb-3">
+            <% if(k.aadhaar_front){ %><a href="/uploads/<%= k.aadhaar_front %>" target="_blank" class="text-decoration-none"><div class="border rounded-2 p-1 text-center" style="width:80px"><img src="/uploads/<%= k.aadhaar_front %>" style="width:100%;height:55px;object-fit:cover;border-radius:6px"/><small class="d-block text-muted mt-1" style="font-size:.65rem">Aadhaar F</small></div></a><% } %>
+            <% if(k.aadhaar_back){ %><a href="/uploads/<%= k.aadhaar_back %>" target="_blank" class="text-decoration-none"><div class="border rounded-2 p-1 text-center" style="width:80px"><img src="/uploads/<%= k.aadhaar_back %>" style="width:100%;height:55px;object-fit:cover;border-radius:6px"/><small class="d-block text-muted mt-1" style="font-size:.65rem">Aadhaar B</small></div></a><% } %>
+            <% if(k.pan_document){ %><a href="/uploads/<%= k.pan_document %>" target="_blank" class="text-decoration-none"><div class="border rounded-2 p-1 text-center" style="width:80px"><img src="/uploads/<%= k.pan_document %>" style="width:100%;height:55px;object-fit:cover;border-radius:6px"/><small class="d-block text-muted mt-1" style="font-size:.65rem">PAN</small></div></a><% } %>
+            <% if(k.selfie){ %><a href="/uploads/<%= k.selfie %>" target="_blank" class="text-decoration-none"><div class="border rounded-2 p-1 text-center" style="width:80px"><img src="/uploads/<%= k.selfie %>" style="width:100%;height:55px;object-fit:cover;border-radius:6px"/><small class="d-block text-muted mt-1" style="font-size:.65rem">Selfie</small></div></a><% } %>
+          </div>
+        <% } else { %><p class="text-muted small mb-3">No KYC documents submitted yet</p><% } %>
+
+        <form method="POST" action="/admin/vendors/<%= vendor.id %>/kyc">
+          <div class="row g-2">
+            <div class="col-md-5">
+              <select name="status" class="form-select form-select-sm" required>
+                <option value="">-- Select Action --</option>
+                <option value="approved">✅ Approve KYC</option>
+                <option value="rejected">❌ Reject KYC</option>
+                <option value="under_review">⏳ Under Review</option>
+              </select>
+            </div>
+            <div class="col-md-5">
+              <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Rejection reason"/>
+            </div>
+            <div class="col-md-2">
+              <button class="btn btn-sm btn-primary w-100">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Bank Details -->
+    <div class="card mb-3">
+      <div class="card-header">🏦 Bank Details</div>
+      <div class="card-body p-0">
+        <% if(vendor.VendorBankDetail){ const b=vendor.VendorBankDetail; %>
+          <table class="table table-sm mb-0">
+            <tr><td class="text-muted ps-3" width="40%">Account Holder</td><td><%= b.account_holder_name %></td></tr>
+            <tr><td class="text-muted ps-3">Account No.</td><td><%= b.account_number %></td></tr>
+            <tr><td class="text-muted ps-3">IFSC</td><td><%= b.ifsc_code %></td></tr>
+            <tr><td class="text-muted ps-3">Bank</td><td><%= b.bank_name||'—' %></td></tr>
+            <tr><td class="text-muted ps-3">UPI ID</td><td><%= b.upi_id||'—' %></td></tr>
+          </table>
+          <% if(b.passbook_image){ %><div class="p-3"><small class="text-muted">Passbook:</small><br><a href="/uploads/<%= b.passbook_image %>" target="_blank"><img src="/uploads/<%= b.passbook_image %>" class="img-thumbnail mt-1" style="height:70px;object-fit:cover"/></a></div><% } %>
+        <% } else { %><p class="text-muted small p-3 mb-0">No bank details submitted yet</p><% } %>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div class="col-lg-6">
+
+    <!-- Active Subscription -->
+    <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>⭐ Subscription</span>
+        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#assignSubModal">
+          <i class="bi bi-plus-lg"></i> Assign Plan
+        </button>
+      </div>
+      <div class="card-body">
+        <% if(activeSub){ %>
+          <div class="p-3 rounded-3 mb-3" style="background:linear-gradient(135deg,#ede9ff,#f5f0ff);border:1px solid #d4c8ff">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <% const icons={basic:'🥉',pro:'🥈',advanced:'🥇'}; %>
+                <h6 class="fw-bold mb-1"><%= icons[activeSub.SubscriptionPlan?.name]||'📦' %> <%= activeSub.SubscriptionPlan?.name?.toUpperCase() %> Plan</h6>
+                <small class="text-muted">Billing: <strong><%= activeSub.billing_cycle %></strong></small><br>
+                <small class="text-muted">Expires: <strong><%= formatDate(activeSub.expires_at || activeSub.expiresAt) %></strong></small>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-success">✅ Active</span>
+                <% const daysLeft = Math.ceil((new Date(activeSub.expires_at) - new Date()) / (1000*60*60*24)); %>
+                <div class="mt-1"><small class="text-muted"><%= daysLeft %> days left</small></div>
+              </div>
+            </div>
+            <form method="POST" action="/admin/vendors/<%= vendor.id %>/subscription/<%= activeSub.id %>/cancel" class="mt-2">
+              <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Cancel this subscription?')">❌ Cancel Subscription</button>
+            </form>
+          </div>
+        <% } else { %>
+          <div class="text-center py-3 text-muted">
+            <div style="font-size:2rem">📦</div>
+            <p class="small mt-2 mb-0">No active subscription</p>
+          </div>
+        <% } %>
+
+        <!-- Subscription History -->
+        <% if(subHistory.length){ %>
+          <div class="mt-2">
+            <small class="text-muted fw-semibold d-block mb-2">History</small>
+            <% subHistory.forEach(s => { %>
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div>
+                  <span class="fw-semibold small"><%= s.SubscriptionPlan?.name?.toUpperCase() %></span>
+                  <span class="text-muted small ms-2"><%= s.billing_cycle %></span>
+                </div>
+                <div class="text-end">
+                  <% const sc={active:'success',expired:'secondary',cancelled:'danger'}; %>
+                  <span class="badge bg-<%= sc[s.status] %>"><%= s.status %></span>
+                  <div><small class="text-muted"><%= formatDate(s.created_at || s.createdAt) %></small></div>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Pricing Config -->
+    <div class="card mb-3">
+      <div class="card-header">💹 Revenue & Pricing</div>
+      <div class="card-body">
+        <div class="alert alert-info py-2 small mb-3">
+          🌐 Platform defaults — Charge: <strong><%= settings.platform_charge_percent %>%</strong> | GST: <strong><%= settings.gst_percent %>%</strong> | Commission: <strong><%= settings.default_commission_percent %>%</strong>
+        </div>
+        <form method="POST" action="/admin/vendors/<%= vendor.id %>/pricing">
+          <div class="row g-2">
+            <div class="col-md-6">
+              <label class="form-label">Revenue Model</label>
+              <select name="revenue_model" class="form-select form-select-sm">
+                <option value="">Platform Default (<%= settings.default_revenue_model %>)</option>
+                <option value="commission" <%= vendor.revenue_model==='commission'?'selected':'' %>>💸 Commission</option>
+                <option value="subscription" <%= vendor.revenue_model==='subscription'?'selected':'' %>>📦 Subscription</option>
+                <option value="hybrid" <%= vendor.revenue_model==='hybrid'?'selected':'' %>>🔀 Hybrid</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Commission % <small class="text-muted">(blank=default)</small></label>
+              <input type="number" name="commission_percent" class="form-control form-control-sm" step="0.01" min="0" max="100" value="<%= vendor.commission_percent||'' %>" placeholder="e.g. 8.5"/>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-sm btn-primary">💾 Save Pricing</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">✏️ Edit Vendor Profile</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/admin/vendors/<%= vendor.id %>/update-profile" enctype="multipart/form-data">
+        <div class="modal-body">
+
+          <!-- Owner Info -->
+          <div class="fw-semibold small text-uppercase text-muted mb-2">👤 Owner Details</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label">Owner Name</label>
+              <input type="text" name="name" class="form-control" value="<%= vendor.User?.name||'' %>" placeholder="Ramesh Kumar"/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Mobile <small class="text-muted">(read-only)</small></label>
+              <input type="text" class="form-control" value="<%= vendor.User?.mobile||'' %>" disabled/>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" value="<%= vendor.User?.email||'' %>" placeholder="vendor@email.com"/>
+            </div>
+          </div>
+
+          <!-- Business Info -->
+          <div class="fw-semibold small text-uppercase text-muted mb-2">🏪 Business Details</div>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label">Business Name <span class="text-danger">*</span></label>
+              <input type="text" name="business_name" class="form-control" value="<%= vendor.business_name||'' %>" required/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Address</label>
+              <input type="text" name="address" class="form-control" value="<%= vendor.address||'' %>"/>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description</label>
+              <textarea name="description" class="form-control" rows="2"><%= vendor.description||'' %></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Latitude</label>
+              <input type="number" name="latitude" class="form-control" step="any" value="<%= vendor.latitude||'' %>"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Longitude</label>
+              <input type="number" name="longitude" class="form-control" step="any" value="<%= vendor.longitude||'' %>"/>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Working Hours <small class="text-muted">(JSON format)</small></label>
+              <textarea name="working_hours" class="form-control" rows="3" placeholder='{"mon":"9am-6pm","sun":"Closed"}'><%= vendor.working_hours ? JSON.stringify(vendor.working_hours, null, 2) : '' %></textarea>
+            </div>
+          </div>
+
+          <!-- Images -->
+          <div class="fw-semibold small text-uppercase text-muted mb-2">🖼️ Images</div>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Logo <small class="text-muted">(leave blank to keep current)</small></label>
+              <% if(vendor.logo){ %>
+                <div class="mb-2"><img src="/uploads/<%= vendor.logo %>" style="height:50px;border-radius:8px;object-fit:cover"/> <small class="text-muted ms-2">Current logo</small></div>
+              <% } %>
+              <input type="file" name="logo" class="form-control" accept="image/*"/>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Banner <small class="text-muted">(leave blank to keep current)</small></label>
+              <% if(vendor.banner){ %>
+                <div class="mb-2"><img src="/uploads/<%= vendor.banner %>" style="height:50px;border-radius:8px;object-fit:cover"/> <small class="text-muted ms-2">Current banner</small></div>
+              <% } %>
+              <input type="file" name="banner" class="form-control" accept="image/*"/>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">💾 Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Subscription Modal -->
+<div class="modal fade" id="assignSubModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title">⭐ Assign Subscription Plan</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="POST" action="/admin/vendors/<%= vendor.id %>/subscription">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Select Plan</label>
+            <select name="plan_id" class="form-select" required>
+              <option value="">-- Choose Plan --</option>
+              <% plans.forEach(p => { %>
+                <option value="<%= p.id %>"><%= (p.name||'').toUpperCase() %> — ₹<%= p.price_monthly %>/mo | ₹<%= p.price_yearly %>/yr</option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label">Billing Cycle</label>
+              <select name="billing_cycle" class="form-select">
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Duration (months)</label>
+              <input type="number" name="months" class="form-control" value="1" min="1" max="24"/>
+            </div>
+          </div>
+          <div class="alert alert-info small mt-3 mb-0 py-2">
+            💡 Any existing active subscription will be cancelled and replaced.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">⭐ Assign Plan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

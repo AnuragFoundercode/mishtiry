@@ -1,0 +1,55 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <span>👥 Users <span class="badge bg-primary ms-1"><%= total %></span></span>
+    <form class="d-flex gap-2" method="GET">
+      <input type="text" name="search" class="form-control form-control-sm" placeholder="🔍 Search name / mobile" value="<%= search %>" style="width:220px"/>
+      <button class="btn btn-sm btn-primary">Search</button>
+      <% if(search){ %><a href="/admin/users" class="btn btn-sm btn-outline-secondary">Clear</a><% } %>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>#</th><th>Name</th><th>Mobile</th><th>Email</th><th>Joined</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+      <% users.forEach((u,i) => { %>
+        <tr>
+          <td class="text-muted small"><%= (currentPage-1)*15 + i+1 %></td>
+          <td><%= u.name || '—' %></td>
+          <td>📱 <%= u.mobile %></td>
+          <td><%= u.email || '—' %></td>
+          <td class="text-muted small"><%= formatDate(u.created_at || u.createdAt) %></td>
+          <td>
+            <% if(u.is_blocked){ %><span class="badge bg-danger">🚫 Blocked</span>
+            <% } else { %><span class="badge bg-success">✅ Active</span><% } %>
+          </td>
+          <td>
+            <form method="POST" action="/admin/users/<%= u.id %>/toggle-block" style="display:inline">
+              <button class="btn btn-sm <%= u.is_blocked ? 'btn-success' : 'btn-danger' %>" onclick="return confirm('<%= u.is_blocked ? 'Unblock' : 'Block' %> this user?')">
+                <%= u.is_blocked ? '✅ Unblock' : '🚫 Block' %>
+              </button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+      <% if(!users.length){ %><tr><td colspan="7" class="text-center text-muted py-4">No users found</td></tr><% } %>
+      </tbody>
+    </table>
+  </div>
+  <% if(pages > 1){ %>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <small class="text-muted">Showing <%= (currentPage-1)*15+1 %>–<%= Math.min(currentPage*15,total) %> of <%= total %></small>
+    <nav><ul class="pagination pagination-sm mb-0">
+      <% for(let p=1;p<=pages;p++){ %>
+        <li class="page-item <%= p==currentPage?'active':'' %>"><a class="page-link" href="?page=<%= p %>&search=<%= search %>"><%= p %></a></li>
+      <% } %>
+    </ul></nav>
+  </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

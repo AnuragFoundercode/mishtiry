@@ -1,0 +1,123 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+
+<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-3">
+  <div>
+    <h5 class="mb-0 fw-bold">⭐ Subscription Plans</h5>
+    <small class="text-muted"><%= activeSubs %> active subscriptions across all vendors</small>
+  </div>
+  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPlanModal">
+    <i class="bi bi-plus-lg"></i> Add Plan
+  </button>
+</div>
+
+<div class="row g-3 mb-4">
+<% plans.forEach(plan => { %>
+  <div class="col-12 col-sm-6 col-lg-4">
+    <div class="card h-100 <%= !plan.is_active ? 'opacity-50' : '' %>">
+      <div class="card-body">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start mb-3">
+          <div class="mb-2 mb-sm-0">
+            <% const icons={basic:'🥉',pro:'🥈',advanced:'🥇'}; %>
+            <h5 class="fw-bold mb-1"><%= icons[plan.name]||'📦' %> <%= (plan.name||'').charAt(0).toUpperCase()+(plan.name||'').slice(1) %></h5>
+            <span class="badge bg-<%= plan.is_active?'success':'secondary' %>"><%= plan.is_active?'Active':'Inactive' %></span>
+          </div>
+          <div class="text-start text-sm-end">
+            <div class="fw-bold text-primary fs-5">₹<%= plan.price_monthly %><small class="text-muted fs-6">/mo</small></div>
+            <small class="text-muted">₹<%= plan.price_yearly %>/yr</small>
+          </div>
+        </div>
+        <ul class="list-unstyled small mb-3">
+          <li class="mb-1">📋 Services: <strong><%= plan.service_limit >= 2147483647 ? 'Unlimited' : plan.service_limit %></strong></li>
+          <li class="mb-1">🖼️ Gallery: <strong><%= plan.gallery_limit >= 2147483647 ? 'Unlimited' : plan.gallery_limit %></strong></li>
+          <li class="mb-1">⭐ Featured: <strong><%= plan.featured_listing ? '✅ Yes' : '❌ No' %></strong></li>
+          <li class="mb-1">💬 Chat: <strong class="text-capitalize"><%= plan.chat_support %></strong></li>
+        </ul>
+        <div class="d-flex flex-column flex-sm-row gap-2">
+          <button class="btn btn-sm btn-outline-primary flex-fill" data-bs-toggle="modal" data-bs-target="#editPlan<%= plan.id %>">✏️ Edit</button>
+          <form method="POST" action="/admin/subscriptions/<%= plan.id %>/toggle" class="flex-fill">
+            <button class="btn btn-sm w-100 <%= plan.is_active?'btn-outline-warning':'btn-outline-success' %>">
+              <%= plan.is_active ? '⏸️ Disable' : '✅ Enable' %>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Plan Modal -->
+    <div class="modal fade" id="editPlan<%= plan.id %>" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header"><h6 class="modal-title">✏️ Edit Plan: <%= (plan.name||'').toUpperCase() %></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+          <form method="POST" action="/admin/subscriptions/<%= plan.id %>/update">
+            <div class="modal-body">
+              <div class="row g-3">
+                <div class="col-12 col-sm-6"><label class="form-label">Monthly Price (₹)</label><input type="number" name="price_monthly" class="form-control" value="<%= plan.price_monthly %>" step="0.01" required/></div>
+                <div class="col-12 col-sm-6"><label class="form-label">Yearly Price (₹)</label><input type="number" name="price_yearly" class="form-control" value="<%= plan.price_yearly %>" step="0.01" required/></div>
+                <div class="col-12 col-sm-6"><label class="form-label">Service Limit</label><input type="number" name="service_limit" class="form-control" value="<%= plan.service_limit %>" required/></div>
+                <div class="col-12 col-sm-6"><label class="form-label">Gallery Limit</label><input type="number" name="gallery_limit" class="form-control" value="<%= plan.gallery_limit %>" required/></div>
+                <div class="col-12 col-sm-6">
+                  <label class="form-label">Featured Listing</label>
+                  <select name="featured_listing" class="form-select">
+                    <option value="1" <%= plan.featured_listing?'selected':'' %>>✅ Yes</option>
+                    <option value="0" <%= !plan.featured_listing?'selected':'' %>>❌ No</option>
+                  </select>
+                </div>
+                <div class="col-12 col-sm-6">
+                  <label class="form-label">Chat Support</label>
+                  <select name="chat_support" class="form-select">
+                    <option value="basic" <%= plan.chat_support==='basic'?'selected':'' %>>Basic</option>
+                    <option value="priority" <%= plan.chat_support==='priority'?'selected':'' %>>Priority</option>
+                    <option value="premium" <%= plan.chat_support==='premium'?'selected':'' %>>Premium</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm">💾 Save</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+<% }) %>
+</div>
+
+<!-- Add Plan Modal -->
+<div class="modal fade" id="addPlanModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h6 class="modal-title">➕ Add New Plan</h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form method="POST" action="/admin/subscriptions">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Plan Name</label>
+              <select name="name" class="form-select" required>
+                <option value="basic">🥉 Basic</option>
+                <option value="pro">🥈 Pro</option>
+                <option value="advanced">🥇 Advanced</option>
+              </select>
+            </div>
+            <div class="col-12 col-sm-6"><label class="form-label">Monthly Price (₹)</label><input type="number" name="price_monthly" class="form-control" step="0.01" required/></div>
+            <div class="col-12 col-sm-6"><label class="form-label">Yearly Price (₹)</label><input type="number" name="price_yearly" class="form-control" step="0.01" required/></div>
+            <div class="col-12 col-sm-6"><label class="form-label">Service Limit</label><input type="number" name="service_limit" class="form-control" value="5" required/></div>
+            <div class="col-12 col-sm-6"><label class="form-label">Gallery Limit</label><input type="number" name="gallery_limit" class="form-control" value="10" required/></div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Featured Listing</label>
+              <select name="featured_listing" class="form-select"><option value="0">❌ No</option><option value="1">✅ Yes</option></select>
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="form-label">Chat Support</label>
+              <select name="chat_support" class="form-select"><option value="basic">Basic</option><option value="priority">Priority</option><option value="premium">Premium</option></select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm">➕ Create Plan</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

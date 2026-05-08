@@ -1,0 +1,137 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">📢 Send Notification</div>
+      <div class="card-body">
+        <form method="POST" action="/admin/notifications" id="notifForm">
+          <div class="mb-3">
+            <label class="form-label">🎯 Target Audience</label>
+            <select name="target_type" class="form-select" id="targetType" onchange="handleTargetChange(this.value)" required>
+              <option value="all">👥 Everyone (Users + Vendors)</option>
+              <option value="all_users">👤 All Users Only</option>
+              <option value="all_vendors">🏪 All Vendors Only</option>
+              <option value="specific">🎯 Specific People</option>
+            </select>
+          </div>
+
+          <!-- Specific selection (hidden by default) -->
+          <div id="specificSection" style="display:none" class="mb-3">
+            <label class="form-label">Select Recipients</label>
+            <div class="border rounded-3 p-3" style="max-height:260px;overflow-y:auto;background:#fafafe">
+              <div class="mb-2">
+                <input type="text" class="form-control form-control-sm" placeholder="🔍 Search..." oninput="filterRecipients(this.value)"/>
+              </div>
+              <div class="mb-2">
+                <button type="button" class="btn btn-xs btn-outline-primary btn-sm me-1" onclick="selectAll()">Select All</button>
+                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm" onclick="clearAll()">Clear</button>
+              </div>
+              <div id="recipientList">
+                <div class="fw-semibold small text-muted mb-1 mt-2">👤 Users</div>
+                <% allUsers.forEach(u => { %>
+                  <div class="recipient-item form-check py-1 border-bottom">
+                    <input class="form-check-input recipient-cb" type="checkbox" value="<%= u.id %>" id="u<%= u.id %>"/>
+                    <label class="form-check-label small" for="u<%= u.id %>">
+                      <strong><%= u.name||'Unknown' %></strong> <span class="text-muted">📱 <%= u.mobile %></span>
+                    </label>
+                  </div>
+                <% }) %>
+                <div class="fw-semibold small text-muted mb-1 mt-3">🏪 Vendors</div>
+                <% allVendors.forEach(v => { %>
+                  <div class="recipient-item form-check py-1 border-bottom">
+                    <input class="form-check-input recipient-cb" type="checkbox" value="<%= v.User?.id||'' %>" id="v<%= v.id %>"/>
+                    <label class="form-check-label small" for="v<%= v.id %>">
+                      <strong><%= v.business_name||'—' %></strong> <span class="text-muted">📱 <%= v.User?.mobile %></span>
+                    </label>
+                  </div>
+                <% }) %>
+              </div>
+            </div>
+            <input type="hidden" name="specific_ids" id="specificIds"/>
+            <small class="text-muted" id="selectedCount">0 selected</small>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">📌 Title</label>
+            <input type="text" name="title" class="form-control" placeholder="Notification title" required/>
+          </div>
+          <div class="mb-4">
+            <label class="form-label">💬 Message</label>
+            <textarea name="body" class="form-control" rows="4" placeholder="Write your message..." required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100" onclick="return prepareSubmit()">
+            📤 Send Notification
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">💡 How it works</div>
+      <div class="card-body">
+        <div class="d-flex gap-3 mb-3 p-3 rounded-3" style="background:#f8f8ff">
+          <div style="font-size:1.5rem">👥</div>
+          <div><strong class="small">Everyone</strong><p class="text-muted small mb-0">Sends to all users and vendors on the platform</p></div>
+        </div>
+        <div class="d-flex gap-3 mb-3 p-3 rounded-3" style="background:#f0fff8">
+          <div style="font-size:1.5rem">👤</div>
+          <div><strong class="small">All Users</strong><p class="text-muted small mb-0">Only sends to customers (not vendors)</p></div>
+        </div>
+        <div class="d-flex gap-3 mb-3 p-3 rounded-3" style="background:#fff8f0">
+          <div style="font-size:1.5rem">🏪</div>
+          <div><strong class="small">All Vendors</strong><p class="text-muted small mb-0">Only sends to approved vendors</p></div>
+        </div>
+        <div class="d-flex gap-3 p-3 rounded-3" style="background:#fdf0ff">
+          <div style="font-size:1.5rem">🎯</div>
+          <div><strong class="small">Specific People</strong><p class="text-muted small mb-0">Hand-pick individual users or vendors from the list</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function handleTargetChange(val) {
+  document.getElementById('specificSection').style.display = val === 'specific' ? 'block' : 'none';
+}
+
+function filterRecipients(q) {
+  document.querySelectorAll('.recipient-item').forEach(el => {
+    el.style.display = el.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function selectAll() {
+  document.querySelectorAll('.recipient-cb').forEach(cb => cb.checked = true);
+  updateCount();
+}
+
+function clearAll() {
+  document.querySelectorAll('.recipient-cb').forEach(cb => cb.checked = false);
+  updateCount();
+}
+
+function updateCount() {
+  const n = document.querySelectorAll('.recipient-cb:checked').length;
+  document.getElementById('selectedCount').textContent = n + ' selected';
+}
+
+document.querySelectorAll('.recipient-cb').forEach(cb => cb.addEventListener('change', updateCount));
+
+function prepareSubmit() {
+  if (document.getElementById('targetType').value === 'specific') {
+    const ids = [...document.querySelectorAll('.recipient-cb:checked')].map(cb => cb.value).join(',');
+    if (!ids) { alert('Please select at least one recipient'); return false; }
+    document.getElementById('specificIds').value = ids;
+  }
+  return confirm('Send this notification?');
+}
+</script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,54 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+
+<div class="card">
+  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <span>🔧 Services <span class="badge bg-primary ms-1"><%= total %></span></span>
+    <form class="d-flex gap-2" method="GET">
+      <input type="text" name="search" class="form-control form-control-sm" placeholder="🔍 Search service" value="<%= search %>" style="width:200px"/>
+      <button class="btn btn-sm btn-primary">Search</button>
+      <% if(search){ %><a href="/admin/services" class="btn btn-sm btn-outline-secondary">Clear</a><% } %>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>#</th><th>Service</th><th>Vendor</th><th>Category</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody>
+      <% services.forEach((s,i) => { %>
+        <tr>
+          <td class="text-muted small"><%= (currentPage-1)*15+i+1 %></td>
+          <td>
+            <div class="fw-semibold"><%= s.name %></div>
+            <small class="text-muted"><%= s.estimated_time ? '⏱️ '+s.estimated_time : '' %></small>
+          </td>
+          <td>🏪 <%= s.Vendor?.business_name||'—' %></td>
+          <td>🏷️ <%= s.Category?.name||'—' %></td>
+          <td class="fw-semibold">₹<%= parseFloat(s.price).toFixed(0) %></td>
+          <td><span class="badge bg-<%= s.is_active?'success':'secondary' %>"><%= s.is_active?'✅ Active':'⏸️ Inactive' %></span></td>
+          <td>
+            <form method="POST" action="/admin/services/<%= s.id %>/toggle" style="display:inline">
+              <button class="btn btn-sm <%= s.is_active?'btn-outline-warning':'btn-outline-success' %>">
+                <%= s.is_active ? '⏸️ Disable' : '✅ Enable' %>
+              </button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+      <% if(!services.length){ %><tr><td colspan="7" class="text-center text-muted py-4">No services found</td></tr><% } %>
+      </tbody>
+    </table>
+  </div>
+  <% if(pages>1){ %>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <small class="text-muted">Showing <%= (currentPage-1)*15+1 %>–<%= Math.min(currentPage*15,total) %> of <%= total %></small>
+    <nav><ul class="pagination pagination-sm mb-0">
+      <% for(let p=1;p<=pages;p++){ %>
+        <li class="page-item <%= p==currentPage?'active':'' %>"><a class="page-link" href="?page=<%= p %>&search=<%= search %>"><%= p %></a></li>
+      <% } %>
+    </ul></nav>
+  </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

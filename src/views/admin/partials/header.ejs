@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= title %> — Mistry Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    :root {
+      --primary: #6c47ff;
+      --primary-dark: #5535e0;
+      --primary-light: #ede9ff;
+      --sidebar-bg: #0f0e17;
+      --sidebar-w: 255px;
+      --topbar-h: 64px;
+      --radius: 14px;
+      --shadow: 0 4px 24px rgba(0,0,0,.07);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Inter', sans-serif; background: #f5f6fa; color: #1a1a2e; font-size: .9rem; }
+
+    /* ── Sidebar ── */
+    #sidebar { position: fixed; top: 0; left: 0; width: var(--sidebar-w); height: 100vh; background: var(--sidebar-bg); overflow-y: auto; z-index: 1000; transition: .3s; display: flex; flex-direction: column; }
+    #sidebar::-webkit-scrollbar { width: 3px; }
+    #sidebar::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+    .sidebar-brand { padding: 20px 18px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1e1e30; }
+    .sidebar-brand .logo { width: 40px; height: 40px; background: linear-gradient(135deg, var(--primary), #a855f7); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0; }
+    .sidebar-brand .brand-text { line-height: 1.2; }
+    .sidebar-brand .brand-text strong { color: #fff; font-size: .95rem; font-weight: 700; display: block; }
+    .sidebar-brand .brand-text span { color: #6060a0; font-size: .7rem; }
+    .nav-section { padding: 18px 18px 6px; font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #3a3a5a; }
+    #sidebar nav a { display: flex; align-items: center; gap: 11px; padding: 10px 18px; color: #8080b0; text-decoration: none; font-size: .83rem; font-weight: 500; transition: .15s; border-left: 3px solid transparent; margin: 1px 0; }
+    #sidebar nav a i { font-size: 1rem; width: 18px; flex-shrink: 0; }
+    #sidebar nav a:hover { background: #1a1a2e; color: #c0c0e0; }
+    #sidebar nav a.active { background: linear-gradient(90deg, rgba(108,71,255,.15), transparent); color: #fff; border-left-color: var(--primary); }
+    #sidebar nav a.active i { color: var(--primary); }
+    .sidebar-footer { margin-top: auto; padding: 14px 18px; border-top: 1px solid #1e1e30; }
+    .sidebar-footer a { display: flex; align-items: center; gap: 10px; color: #6060a0; font-size: .82rem; text-decoration: none; padding: 8px 0; }
+    .sidebar-footer a:hover { color: #ef4444; }
+
+    /* ── Topbar ── */
+    #topbar { position: fixed; top: 0; left: var(--sidebar-w); right: 0; height: var(--topbar-h); background: #fff; border-bottom: 1px solid #eeeef5; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; z-index: 999; box-shadow: 0 1px 0 #eeeef5; }
+    .topbar-left { display: flex; align-items: center; gap: 14px; }
+    .topbar-left .page-title { font-weight: 700; font-size: 1rem; color: #1a1a2e; }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .admin-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #a855f7); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem; }
+    .admin-name { font-size: .85rem; font-weight: 600; color: #333; }
+
+    /* ── Main ── */
+    #main { margin-left: var(--sidebar-w); padding-top: var(--topbar-h); min-height: 100vh; }
+    .content { padding: 28px; }
+
+    /* ── Cards ── */
+    .card { border: none; border-radius: var(--radius); box-shadow: var(--shadow); background: #fff; }
+    .card-header { background: #fff; border-bottom: 1px solid #f0f0f8; border-radius: var(--radius) var(--radius) 0 0 !important; padding: 16px 20px; font-weight: 600; font-size: .9rem; }
+    .card-footer { background: #fafafa; border-top: 1px solid #f0f0f8; border-radius: 0 0 var(--radius) var(--radius) !important; padding: 12px 20px; }
+
+    /* ── Stat Cards ── */
+    .stat-card { border-radius: var(--radius); padding: 22px; color: #fff; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+    .stat-card .icon { font-size: 3rem; opacity: .18; position: absolute; right: 14px; bottom: 8px; }
+    .stat-card h3 { font-size: 2rem; font-weight: 800; margin: 0; letter-spacing: -.5px; }
+    .stat-card p { margin: 5px 0 0; font-size: .8rem; opacity: .85; font-weight: 500; }
+
+    /* ── Table ── */
+    .table { font-size: .85rem; }
+    .table th { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #999; border-bottom: 2px solid #f0f0f8; padding: 10px 14px; white-space: nowrap; }
+    .table td { padding: 12px 14px; vertical-align: middle; border-bottom: 1px solid #f8f8fc; }
+    .table tbody tr:hover { background: #fafafe; }
+    .table tbody tr:last-child td { border-bottom: none; }
+
+    /* ── Badges ── */
+    .badge { font-size: .7rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; letter-spacing: .2px; }
+
+    /* ── Buttons ── */
+    .btn { font-size: .83rem; font-weight: 500; border-radius: 8px; }
+    .btn-primary { background: var(--primary); border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    .btn-sm { padding: 5px 12px; font-size: .78rem; }
+
+    /* ── Forms ── */
+    .form-control, .form-select { border-radius: 9px; font-size: .85rem; border-color: #e8e8f0; padding: 9px 13px; }
+    .form-control:focus, .form-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(108,71,255,.1); }
+    .form-label { font-size: .82rem; font-weight: 600; color: #555; margin-bottom: 5px; }
+    .input-group-text { border-radius: 9px 0 0 9px; background: #f8f8ff; border-color: #e8e8f0; font-size: .85rem; }
+
+    /* ── Modals ── */
+    .modal-content { border: none; border-radius: 18px; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
+    .modal-header { border-bottom: 1px solid #f0f0f8; padding: 18px 22px; border-radius: 18px 18px 0 0; }
+    .modal-title { font-weight: 700; font-size: .95rem; }
+    .modal-footer { border-top: 1px solid #f0f0f8; padding: 14px 22px; border-radius: 0 0 18px 18px; }
+    .modal-body { padding: 22px; }
+
+    /* ── Alerts ── */
+    .alert { border-radius: 10px; border: none; font-size: .85rem; font-weight: 500; }
+    .alert-success { background: #ecfdf5; color: #065f46; }
+    .alert-danger { background: #fef2f2; color: #991b1b; }
+    .alert-info { background: #eff6ff; color: #1e40af; }
+    .alert-warning { background: #fffbeb; color: #92400e; }
+
+    /* ── Pagination ── */
+    .page-link { border-radius: 8px !important; margin: 0 2px; font-size: .8rem; color: var(--primary); border-color: #e8e8f0; }
+    .page-item.active .page-link { background: var(--primary); border-color: var(--primary); }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      #sidebar { left: calc(-1 * var(--sidebar-w)); }
+      #sidebar.open { left: 0; }
+      #topbar, #main { left: 0; margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="sidebar-brand">
+    <div class="logo">🔧</div>
+    <div class="brand-text"><strong>Mistry</strong><span>Admin Panel</span></div>
+  </div>
+  <nav>
+    <div class="nav-section">Main</div>
+    <a href="/admin/dashboard" class="<%= page==='dashboard'?'active':'' %>"><i class="bi bi-grid-1x2-fill"></i> Dashboard</a>
+
+    <div class="nav-section">People</div>
+    <a href="/admin/users" class="<%= page==='users'?'active':'' %>"><i class="bi bi-people-fill"></i> Users</a>
+    <a href="/admin/vendors" class="<%= page==='vendors'?'active':'' %>"><i class="bi bi-shop"></i> Vendors</a>
+
+    <div class="nav-section">Catalogue</div>
+    <a href="/admin/categories" class="<%= page==='categories'?'active':'' %>"><i class="bi bi-tags-fill"></i> Categories</a>
+    <a href="/admin/services" class="<%= page==='services'?'active':'' %>"><i class="bi bi-tools"></i> Services</a>
+
+    <div class="nav-section">Operations</div>
+    <a href="/admin/bookings" class="<%= page==='bookings'?'active':'' %>"><i class="bi bi-calendar-check-fill"></i> Bookings</a>
+    <a href="/admin/revenue" class="<%= page==='revenue'?'active':'' %>"><i class="bi bi-graph-up-arrow"></i> Revenue</a>
+    <a href="/admin/subscriptions" class="<%= page==='subscriptions'?'active':'' %>"><i class="bi bi-star-fill"></i> Subscriptions</a>
+
+    <div class="nav-section">Config</div>
+    <a href="/admin/settings" class="<%= page==='settings'?'active':'' %>"><i class="bi bi-sliders"></i> Settings</a>
+    <a href="/admin/notifications" class="<%= page==='notifications'?'active':'' %>"><i class="bi bi-bell-fill"></i> Notifications</a>
+    <a href="/admin/policies" class="<%= page==='policies'?'active':'' %>"><i class="bi bi-file-text-fill"></i> Policies</a>
+    <a href="/admin/zones" class="<%= page==='zones'?'active':'' %>"><i class="bi bi-geo-alt-fill"></i> Zones</a>
+  </nav>
+  <div class="sidebar-footer">
+    <a href="/admin/logout"><i class="bi bi-box-arrow-left"></i> Logout</a>
+  </div>
+</div>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div class="topbar-left">
+    <button class="btn btn-sm btn-light d-md-none" onclick="document.getElementById('sidebar').classList.toggle('open')">
+      <i class="bi bi-list fs-5"></i>
+    </button>
+    <span class="page-title"><%= title %></span>
+  </div>
+  <div class="topbar-right">
+    <div class="admin-avatar"><%= (adminName||'A')[0].toUpperCase() %></div>
+    <span class="admin-name d-none d-sm-inline"><%= adminName || 'Admin' %></span>
+    <!-- Change Password trigger -->
+    <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#changePwdModal" title="Change Password">
+      <i class="bi bi-key-fill"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Change Password Modal (global, available on all pages) -->
+<div class="modal fade" id="changePwdModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">🔑 Change Password</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/admin/change-password">
+        <div class="modal-body">
+          <% if(typeof error !== 'undefined' && error && error.length){ %>
+            <div class="alert alert-danger py-2 small">⚠️ <%= error %></div>
+          <% } %>
+          <% if(typeof success !== 'undefined' && success && success.length && page === 'settings'){ %>
+            <div class="alert alert-success py-2 small">✅ <%= success %></div>
+          <% } %>
+          <div class="mb-3">
+            <label class="form-label">Current Password</label>
+            <input type="password" name="current" class="form-control" required placeholder="••••••••"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">New Password</label>
+            <input type="password" name="password" class="form-control" required minlength="8" placeholder="Min 8 characters"/>
+          </div>
+          <div class="mb-1">
+            <label class="form-label">Confirm New Password</label>
+            <input type="password" name="confirm" class="form-control" required placeholder="Repeat password"/>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">💾 Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div id="main">
+  <div class="content">
