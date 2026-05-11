@@ -1,32 +1,57 @@
 <%- include('partials/header') %>
 
 <!-- Flash -->
-<% if(typeof success !== 'undefined' && success && success.length){ %><div class="alert alert-success alert-dismissible">✅ <%= success %></div><% } %>
+<% if(typeof success !== 'undefined' && success && success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
 
 <!-- Stat Cards -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-lg-3">
-    <div class="stat-card" style="background:linear-gradient(135deg,#6c47ff,#a855f7)">
-      <p>👥 Total Users</p><h3><%= totalUsers %></h3>
-      <i class="bi bi-people-fill icon"></i>
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#6c47ff,#a855f7)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Total Users</p>
+          <h3 class="text-white mb-0 fw-bold"><%= totalUsers %></h3>
+        </div>
+        <i class="bi bi-people-fill text-white-50" style="font-size:2rem;"></i>
+      </div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">
-      <p>🏪 Total Vendors</p><h3><%= totalVendors %></h3>
-      <i class="bi bi-shop icon"></i>
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Total Vendors</p>
+          <h3 class="text-white mb-0 fw-bold"><%= totalVendors %></h3>
+        </div>
+        <i class="bi bi-shop text-white-50" style="font-size:2rem;"></i>
+      </div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card" style="background:linear-gradient(135deg,#10b981,#059669)">
-      <p>📅 Total Bookings</p><h3><%= totalBookings %></h3>
-      <i class="bi bi-calendar-check-fill icon"></i>
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#10b981,#059669)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Total Bookings</p>
+          <h3 class="text-white mb-0 fw-bold"><%= totalBookings %></h3>
+        </div>
+        <i class="bi bi-calendar-check-fill text-white-50" style="font-size:2rem;"></i>
+      </div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
-      <p>💰 Total Revenue</p><h3>₹<%= parseFloat(totalRevenue).toFixed(0) %></h3>
-      <i class="bi bi-currency-rupee icon"></i>
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Total Revenue</p>
+          <h3 class="text-white mb-0 fw-bold">₹<%= parseFloat(totalRevenue).toFixed(0) %></h3>
+        </div>
+        <i class="bi bi-currency-rupee text-white-50" style="font-size:2rem;"></i>
+      </div>
     </div>
   </div>
 </div>
@@ -34,29 +59,35 @@
 <!-- Revenue Breakdown -->
 <div class="row g-3 mb-4">
   <div class="col-md-4">
-    <div class="card h-100">
+    <div class="card h-100 border-0 shadow-sm">
       <div class="card-body text-center py-4">
-        <div style="font-size:2rem">💸</div>
-        <h5 class="mt-2 mb-0 fw-bold text-success">₹<%= parseFloat(totalRevenue).toFixed(2) %></h5>
-        <p class="text-muted small mt-1">Total Platform Revenue</p>
+        <div class="mb-3">
+          <i class="bi bi-graph-up-arrow text-success" style="font-size:2.5rem;"></i>
+        </div>
+        <h4 class="mb-1 fw-bold text-success">₹<%= parseFloat(totalRevenue).toFixed(2) %></h4>
+        <p class="text-muted small mb-0">Total Platform Revenue</p>
       </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card h-100">
+    <div class="card h-100 border-0 shadow-sm">
       <div class="card-body text-center py-4">
-        <div style="font-size:2rem">🏷️</div>
-        <h5 class="mt-2 mb-0 fw-bold text-primary">₹<%= parseFloat(platformRevenue).toFixed(2) %></h5>
-        <p class="text-muted small mt-1">Platform Charges Collected</p>
+        <div class="mb-3">
+          <i class="bi bi-credit-card text-primary" style="font-size:2.5rem;"></i>
+        </div>
+        <h4 class="mb-1 fw-bold text-primary">₹<%= parseFloat(platformRevenue).toFixed(2) %></h4>
+        <p class="text-muted small mb-0">Platform Charges Collected</p>
       </div>
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card h-100">
+    <div class="card h-100 border-0 shadow-sm">
       <div class="card-body text-center py-4">
-        <div style="font-size:2rem">🧾</div>
-        <h5 class="mt-2 mb-0 fw-bold text-warning">₹<%= parseFloat(gstCollected).toFixed(2) %></h5>
-        <p class="text-muted small mt-1">GST Collected</p>
+        <div class="mb-3">
+          <i class="bi bi-receipt text-warning" style="font-size:2.5rem;"></i>
+        </div>
+        <h4 class="mb-1 fw-bold text-warning">₹<%= parseFloat(gstCollected).toFixed(2) %></h4>
+        <p class="text-muted small mb-0">GST Collected</p>
       </div>
     </div>
   </div>
@@ -65,26 +96,34 @@
 <!-- Alerts Row -->
 <div class="row g-3 mb-4">
   <div class="col-md-6">
-    <div class="card border-warning">
+    <div class="card border-0 shadow-sm border-start border-warning border-4">
       <div class="card-body d-flex align-items-center gap-3">
-        <div style="font-size:2rem">⏳</div>
-        <div>
-          <h5 class="mb-0 fw-bold"><%= pendingKyc %></h5>
-          <p class="mb-0 text-muted small">KYC Pending Review</p>
+        <div class="p-3 bg-warning bg-opacity-10 rounded-circle">
+          <i class="bi bi-clock-history text-warning" style="font-size:1.5rem;"></i>
         </div>
-        <a href="/admin/vendors?status=pending_kyc" class="btn btn-sm btn-warning ms-auto">Review →</a>
+        <div class="flex-grow-1">
+          <h4 class="mb-0 fw-bold text-dark"><%= pendingKyc %></h4>
+          <p class="mb-0 text-muted small">KYC Applications Pending Review</p>
+        </div>
+        <a href="/admin/vendors?status=pending_kyc" class="btn btn-warning btn-sm">
+          <i class="bi bi-arrow-right"></i>
+        </a>
       </div>
     </div>
   </div>
   <div class="col-md-6">
-    <div class="card border-info">
+    <div class="card border-0 shadow-sm border-start border-info border-4">
       <div class="card-body d-flex align-items-center gap-3">
-        <div style="font-size:2rem">📋</div>
-        <div>
-          <h5 class="mb-0 fw-bold"><%= pendingBookings %></h5>
-          <p class="mb-0 text-muted small">Pending Bookings</p>
+        <div class="p-3 bg-info bg-opacity-10 rounded-circle">
+          <i class="bi bi-clipboard-check text-info" style="font-size:1.5rem;"></i>
         </div>
-        <a href="/admin/bookings?status=pending" class="btn btn-sm btn-info ms-auto text-white">View →</a>
+        <div class="flex-grow-1">
+          <h4 class="mb-0 fw-bold text-dark"><%= pendingBookings %></h4>
+          <p class="mb-0 text-muted small">Bookings Awaiting Action</p>
+        </div>
+        <a href="/admin/bookings?status=pending" class="btn btn-info btn-sm text-white">
+          <i class="bi bi-arrow-right"></i>
+        </a>
       </div>
     </div>
   </div>
@@ -93,55 +132,90 @@
 <!-- Recent Tables -->
 <div class="row g-3">
   <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>📅 Recent Bookings</span>
-        <a href="/admin/bookings" class="btn btn-sm btn-outline-primary">View All</a>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-calendar-event me-2 text-primary"></i>Recent Bookings
+        </h6>
+        <a href="/admin/bookings" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-arrow-right me-1"></i>View All
+        </a>
       </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead><tr><th>User</th><th>Service</th><th>Amount</th><th>Status</th></tr></thead>
+          <thead class="table-light">
+            <tr><th>User</th><th>Service</th><th>Amount</th><th>Status</th></tr>
+          </thead>
           <tbody>
           <% recentBookings.forEach(b => { %>
             <tr>
-              <td><%= b.User?.name || '—' %><br><small class="text-muted"><%= b.User?.mobile %></small></td>
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="bg-primary bg-opacity-10 rounded-circle p-2">
+                    <i class="bi bi-person-fill text-primary" style="font-size:12px;"></i>
+                  </div>
+                  <div>
+                    <div class="fw-medium"><%= b.User?.name || '—' %></div>
+                    <small class="text-muted"><%= b.User?.mobile %></small>
+                  </div>
+                </div>
+              </td>
               <td><%= b.Service?.name || '—' %></td>
-              <td>₹<%= parseFloat(b.total_amount||b.amount||0).toFixed(0) %></td>
+              <td class="fw-semibold">₹<%= parseFloat(b.total_amount||b.amount||0).toFixed(0) %></td>
               <td>
                 <% const sc={pending:'warning',accepted:'info',in_progress:'primary',completed:'success',cancelled:'danger'}; %>
-                <span class="badge bg-<%= sc[b.status]||'secondary' %>"><%= b.status %></span>
+                <span class="badge bg-<%= sc[b.status]||'secondary' %> rounded-pill"><%= b.status %></span>
               </td>
             </tr>
           <% }) %>
-          <% if(!recentBookings.length){ %><tr><td colspan="4" class="text-center text-muted py-3">No bookings yet</td></tr><% } %>
+          <% if(!recentBookings.length){ %>
+            <tr><td colspan="4" class="text-center text-muted py-4">No bookings yet</td></tr>
+          <% } %>
           </tbody>
         </table>
       </div>
     </div>
   </div>
   <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>🏪 Recent Vendors</span>
-        <a href="/admin/vendors" class="btn btn-sm btn-outline-primary">View All</a>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-shop me-2 text-primary"></i>Recent Vendors
+        </h6>
+        <a href="/admin/vendors" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-arrow-right me-1"></i>View All
+        </a>
       </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead><tr><th>Vendor</th><th>KYC</th></tr></thead>
+          <thead class="table-light">
+            <tr><th>Vendor</th><th>KYC Status</th></tr>
+          </thead>
           <tbody>
           <% recentVendors.forEach(v => { %>
             <tr>
               <td>
-                <a href="/admin/vendors/<%= v.id %>" class="text-decoration-none fw-semibold"><%= v.business_name||'—' %></a>
-                <br><small class="text-muted"><%= v.User?.mobile %></small>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="bg-warning bg-opacity-10 rounded-circle p-2">
+                    <i class="bi bi-shop text-warning" style="font-size:12px;"></i>
+                  </div>
+                  <div>
+                    <a href="/admin/vendors/<%= v.id %>" class="text-decoration-none fw-semibold text-dark">
+                      <%= v.business_name||'—' %>
+                    </a>
+                    <br><small class="text-muted"><%= v.User?.mobile %></small>
+                  </div>
+                </div>
               </td>
               <td>
                 <% const kc={pending:'secondary',under_review:'warning',approved:'success',rejected:'danger'}; %>
-                <span class="badge bg-<%= kc[v.kyc_status] %>"><%= v.kyc_status %></span>
+                <span class="badge bg-<%= kc[v.kyc_status] %> rounded-pill"><%= v.kyc_status %></span>
               </td>
             </tr>
           <% }) %>
-          <% if(!recentVendors.length){ %><tr><td colspan="2" class="text-center text-muted py-3">No vendors yet</td></tr><% } %>
+          <% if(!recentVendors.length){ %>
+            <tr><td colspan="2" class="text-center text-muted py-4">No vendors yet</td></tr>
+          <% } %>
           </tbody>
         </table>
       </div>

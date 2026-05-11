@@ -1,51 +1,90 @@
 <%- include('partials/header') %>
 
-<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
-<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
 
-<div class="row g-3">
+<div class="row g-4">
   <div class="col-lg-7">
-    <div class="card">
-      <div class="card-header">📢 Send Notification</div>
-      <div class="card-body">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-megaphone me-2 text-primary"></i>Send Notification
+        </h6>
+      </div>
+      <div class="card-body p-4">
         <form method="POST" action="/admin/notifications" id="notifForm">
           <div class="mb-3">
-            <label class="form-label">🎯 Target Audience</label>
+            <label class="form-label fw-medium">
+              <i class="bi bi-bullseye text-primary me-2"></i>Target Audience
+            </label>
             <select name="target_type" class="form-select" id="targetType" onchange="handleTargetChange(this.value)" required>
-              <option value="all">👥 Everyone (Users + Vendors)</option>
-              <option value="all_users">👤 All Users Only</option>
-              <option value="all_vendors">🏪 All Vendors Only</option>
-              <option value="specific">🎯 Specific People</option>
+              <option value="all">
+                <i class="bi bi-people"></i> Everyone (Users + Vendors)
+              </option>
+              <option value="all_users">
+                <i class="bi bi-person"></i> All Users Only
+              </option>
+              <option value="all_vendors">
+                <i class="bi bi-shop"></i> All Vendors Only
+              </option>
+              <option value="specific">
+                <i class="bi bi-bullseye"></i> Specific People
+              </option>
             </select>
           </div>
 
           <!-- Specific selection (hidden by default) -->
           <div id="specificSection" style="display:none" class="mb-3">
-            <label class="form-label">Select Recipients</label>
+            <label class="form-label fw-medium">Select Recipients</label>
             <div class="border rounded-3 p-3" style="max-height:260px;overflow-y:auto;background:#fafafe">
               <div class="mb-2">
-                <input type="text" class="form-control form-control-sm" placeholder="🔍 Search..." oninput="filterRecipients(this.value)"/>
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-light border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                  </span>
+                  <input type="text" class="form-control border-start-0" placeholder="Search recipients..." oninput="filterRecipients(this.value)"/>
+                </div>
               </div>
               <div class="mb-2">
                 <button type="button" class="btn btn-xs btn-outline-primary btn-sm me-1" onclick="selectAll()">Select All</button>
                 <button type="button" class="btn btn-xs btn-outline-secondary btn-sm" onclick="clearAll()">Clear</button>
               </div>
               <div id="recipientList">
-                <div class="fw-semibold small text-muted mb-1 mt-2">👤 Users</div>
+                <div class="fw-semibold small text-muted mb-2 mt-3 d-flex align-items-center gap-1">
+                  <i class="bi bi-person-fill"></i>Users
+                </div>
                 <% allUsers.forEach(u => { %>
                   <div class="recipient-item form-check py-1 border-bottom">
                     <input class="form-check-input recipient-cb" type="checkbox" value="<%= u.id %>" id="u<%= u.id %>"/>
                     <label class="form-check-label small" for="u<%= u.id %>">
-                      <strong><%= u.name||'Unknown' %></strong> <span class="text-muted">📱 <%= u.mobile %></span>
+                      <strong><%= u.name||'Unknown' %></strong> 
+                      <span class="text-muted">
+                        <i class="bi bi-phone me-1" style="font-size:10px;"></i><%= u.mobile %>
+                      </span>
                     </label>
                   </div>
                 <% }) %>
-                <div class="fw-semibold small text-muted mb-1 mt-3">🏪 Vendors</div>
+                <div class="fw-semibold small text-muted mb-2 mt-3 d-flex align-items-center gap-1">
+                  <i class="bi bi-shop"></i>Vendors
+                </div>
                 <% allVendors.forEach(v => { %>
                   <div class="recipient-item form-check py-1 border-bottom">
                     <input class="form-check-input recipient-cb" type="checkbox" value="<%= v.User?.id||'' %>" id="v<%= v.id %>"/>
                     <label class="form-check-label small" for="v<%= v.id %>">
-                      <strong><%= v.business_name||'—' %></strong> <span class="text-muted">📱 <%= v.User?.mobile %></span>
+                      <strong><%= v.business_name||'—' %></strong> 
+                      <span class="text-muted">
+                        <i class="bi bi-phone me-1" style="font-size:10px;"></i><%= v.User?.mobile %>
+                      </span>
                     </label>
                   </div>
                 <% }) %>
@@ -56,15 +95,19 @@
           </div>
 
           <div class="mb-3">
-            <label class="form-label">📌 Title</label>
+            <label class="form-label fw-medium">
+              <i class="bi bi-bookmark text-primary me-2"></i>Title
+            </label>
             <input type="text" name="title" class="form-control" placeholder="Notification title" required/>
           </div>
           <div class="mb-4">
-            <label class="form-label">💬 Message</label>
+            <label class="form-label fw-medium">
+              <i class="bi bi-chat-dots text-primary me-2"></i>Message
+            </label>
             <textarea name="body" class="form-control" rows="4" placeholder="Write your message..." required></textarea>
           </div>
           <button type="submit" class="btn btn-primary w-100" onclick="return prepareSubmit()">
-            📤 Send Notification
+            <i class="bi bi-send me-1"></i>Send Notification
           </button>
         </form>
       </div>
@@ -72,24 +115,48 @@
   </div>
 
   <div class="col-lg-5">
-    <div class="card">
-      <div class="card-header">💡 How it works</div>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-lightbulb me-2 text-primary"></i>How it works
+        </h6>
+      </div>
       <div class="card-body">
-        <div class="d-flex gap-3 mb-3 p-3 rounded-3" style="background:#f8f8ff">
-          <div style="font-size:1.5rem">👥</div>
-          <div><strong class="small">Everyone</strong><p class="text-muted small mb-0">Sends to all users and vendors on the platform</p></div>
+        <div class="d-flex gap-3 mb-3 p-3 rounded-3 bg-primary bg-opacity-10">
+          <div class="text-primary">
+            <i class="bi bi-people" style="font-size:1.5rem;"></i>
+          </div>
+          <div>
+            <strong class="small text-dark">Everyone</strong>
+            <p class="text-muted small mb-0">Sends to all users and vendors on the platform</p>
+          </div>
         </div>
-        <div class="d-flex gap-3 mb-3 p-3 rounded-3" style="background:#f0fff8">
-          <div style="font-size:1.5rem">👤</div>
-          <div><strong class="small">All Users</strong><p class="text-muted small mb-0">Only sends to customers (not vendors)</p></div>
+        <div class="d-flex gap-3 mb-3 p-3 rounded-3 bg-success bg-opacity-10">
+          <div class="text-success">
+            <i class="bi bi-person" style="font-size:1.5rem;"></i>
+          </div>
+          <div>
+            <strong class="small text-dark">All Users</strong>
+            <p class="text-muted small mb-0">Only sends to customers (not vendors)</p>
+          </div>
         </div>
-        <div class="d-flex gap-3 mb-3 p-3 rounded-3" style="background:#fff8f0">
-          <div style="font-size:1.5rem">🏪</div>
-          <div><strong class="small">All Vendors</strong><p class="text-muted small mb-0">Only sends to approved vendors</p></div>
+        <div class="d-flex gap-3 mb-3 p-3 rounded-3 bg-warning bg-opacity-10">
+          <div class="text-warning">
+            <i class="bi bi-shop" style="font-size:1.5rem;"></i>
+          </div>
+          <div>
+            <strong class="small text-dark">All Vendors</strong>
+            <p class="text-muted small mb-0">Only sends to approved vendors</p>
+          </div>
         </div>
-        <div class="d-flex gap-3 p-3 rounded-3" style="background:#fdf0ff">
-          <div style="font-size:1.5rem">🎯</div>
-          <div><strong class="small">Specific People</strong><p class="text-muted small mb-0">Hand-pick individual users or vendors from the list</p></div>
+        <div class="d-flex gap-3 p-3 rounded-3 bg-info bg-opacity-10">
+          <div class="text-info">
+            <i class="bi bi-bullseye" style="font-size:1.5rem;"></i>
+          </div>
+          <div>
+            <strong class="small text-dark">Specific People</strong>
+            <p class="text-muted small mb-0">Hand-pick individual users or vendors from the list</p>
+          </div>
         </div>
       </div>
     </div>

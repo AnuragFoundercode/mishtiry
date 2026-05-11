@@ -1,53 +1,491 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Admin Login — Mistry</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>Mistry Admin Login</title>
+
+  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+
   <style>
-    body{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;}
-    .login-card{background:#fff;border-radius:20px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.3);}
-    .brand-icon{width:60px;height:60px;background:linear-gradient(135deg,#6c47ff,#a855f7);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin:0 auto 16px;}
-    .btn-login{background:linear-gradient(135deg,#6c47ff,#a855f7);border:none;padding:12px;font-size:1rem;font-weight:600;border-radius:10px;}
-    .btn-login:hover{opacity:.9;}
-    .form-control{border-radius:10px;padding:11px 14px;}
-    .form-control:focus{border-color:#6c47ff;box-shadow:0 0 0 .2rem rgba(108,71,255,.15);}
-    .input-group-text{border-radius:10px 0 0 10px;background:#f8f8ff;border-color:#dee2e6;}
+
+    :root{
+      --primary:#4f46e5;
+      --primary-dark:#4338ca;
+      --border:#e5e7eb;
+      --text:#111827;
+      --muted:#6b7280;
+      --bg:#f4f6fb;
+    }
+
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+    }
+
+    body{
+      font-family:'Inter',sans-serif;
+      background:var(--bg);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      color:var(--text);
+    }
+
+    /* Layout */
+    .login-wrapper{
+      width:100%;
+      max-width:1080px;
+      min-height:640px;
+
+      display:grid;
+      grid-template-columns:1fr 460px;
+
+      background:#fff;
+
+      border-radius:28px;
+
+      overflow:hidden;
+
+      box-shadow:
+      0 10px 40px rgba(15,23,42,.08);
+    }
+
+    /* Left Side */
+    .login-banner{
+      position:relative;
+
+      background:
+      linear-gradient(
+      135deg,
+      #111827 0%,
+      #1e293b 100%
+      );
+
+      padding:60px;
+
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+
+      color:#fff;
+    }
+
+    .logo{
+      width:58px;
+      height:58px;
+
+      border-radius:18px;
+
+      display:flex;
+      align-items:center;
+      justify-content:center;
+
+      background:
+      linear-gradient(
+      135deg,
+      var(--primary),
+      #7c3aed
+      );
+
+      font-size:1.5rem;
+    }
+
+    .banner-content{
+      max-width:420px;
+    }
+
+    .banner-content h1{
+      font-size:3rem;
+      line-height:1.1;
+      font-weight:800;
+      margin-bottom:18px;
+      letter-spacing:-1px;
+    }
+
+    .banner-content p{
+      color:rgba(255,255,255,.72);
+      font-size:1rem;
+      line-height:1.7;
+    }
+
+    .banner-footer{
+      font-size:.85rem;
+      color:rgba(255,255,255,.45);
+    }
+
+    /* Right Side */
+    .login-panel{
+      padding:56px 52px;
+
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+    }
+
+    .panel-header{
+      margin-bottom:34px;
+    }
+
+    .panel-header h2{
+      font-size:2rem;
+      font-weight:700;
+      margin-bottom:10px;
+      color:var(--text);
+    }
+
+    .panel-header p{
+      color:var(--muted);
+      font-size:.95rem;
+    }
+
+    /* Alerts */
+    .alert{
+      border:none;
+      border-radius:14px;
+      font-size:.85rem;
+      padding:14px 16px;
+    }
+
+    /* Labels */
+    .form-label{
+      font-size:.86rem;
+      font-weight:600;
+      margin-bottom:8px;
+      color:#374151;
+    }
+
+    /* Input */
+    .input-group{
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+      transition:.2s ease;
+      background:#fff;
+    }
+
+    .input-group:focus-within{
+      border-color:var(--primary);
+
+      box-shadow:
+      0 0 0 4px rgba(79,70,229,.08);
+    }
+
+    .input-group-text{
+      background:#fff;
+      border:none;
+      color:#9ca3af;
+      padding-left:16px;
+    }
+
+    .form-control{
+      border:none !important;
+      box-shadow:none !important;
+      height:54px;
+      font-size:.92rem;
+      padding-left:6px;
+    }
+
+    .form-control::placeholder{
+      color:#9ca3af;
+    }
+
+    .toggle-password{
+      border:none;
+      background:#fff;
+      width:52px;
+      color:#6b7280;
+    }
+
+    /* Options */
+    .options{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:8px;
+      margin-bottom:28px;
+    }
+
+    .form-check-label{
+      font-size:.85rem;
+      color:#4b5563;
+    }
+
+    .form-check-input:checked{
+      background-color:var(--primary);
+      border-color:var(--primary);
+    }
+
+    .forgot-link{
+      color:var(--primary);
+      text-decoration:none;
+      font-size:.85rem;
+      font-weight:600;
+    }
+
+    .forgot-link:hover{
+      color:var(--primary-dark);
+    }
+
+    /* Button */
+    .btn-login{
+      height:56px;
+
+      border:none;
+
+      border-radius:14px;
+
+      background:
+      linear-gradient(
+      135deg,
+      var(--primary),
+      #6366f1
+      );
+
+      color:#fff;
+
+      font-size:.95rem;
+      font-weight:600;
+
+      transition:.2s ease;
+
+      box-shadow:
+      0 10px 20px rgba(79,70,229,.18);
+    }
+
+    .btn-login:hover{
+      transform:translateY(-1px);
+
+      box-shadow:
+      0 14px 24px rgba(79,70,229,.22);
+    }
+
+    /* Mobile */
+    @media(max-width:992px){
+
+      .login-wrapper{
+        grid-template-columns:1fr;
+        max-width:480px;
+      }
+
+      .login-banner{
+        display:none;
+      }
+
+      .login-panel{
+        padding:40px 28px;
+      }
+
+    }
+
   </style>
 </head>
+
 <body>
-<div class="login-card">
-  <div class="text-center mb-4">
-    <div class="brand-icon">🔧</div>
-    <h4 class="fw-700 mb-1">Mistry Admin</h4>
-    <p class="text-muted small">Sign in to your admin panel</p>
+
+  <div class="login-wrapper">
+
+    <!-- LEFT -->
+    <div class="login-banner">
+
+      <div class="logo">
+        <i class="bi bi-tools"></i>
+      </div>
+
+      <div class="banner-content">
+
+        <h1>
+          Mistry Admin Panel
+        </h1>
+
+        <p>
+          Manage vendors, bookings, services, subscriptions,
+          revenue and platform operations from one secure dashboard.
+        </p>
+
+      </div>
+
+      <div class="banner-footer">
+        © 2026 Mistry Technologies
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="login-panel">
+
+      <div class="panel-header">
+
+        <h2>
+          Welcome Back
+        </h2>
+
+        <p>
+          Please sign in to continue to your dashboard
+        </p>
+
+      </div>
+
+      <!-- Alerts -->
+      <% if(error && error.length){ %>
+        <div class="alert alert-danger mb-3">
+          <i class="bi bi-exclamation-circle me-1"></i>
+          <%= error %>
+        </div>
+      <% } %>
+
+      <% if(success && success.length){ %>
+        <div class="alert alert-success mb-3">
+          <i class="bi bi-check-circle me-1"></i>
+          <%= success %>
+        </div>
+      <% } %>
+
+      <!-- Form -->
+      <form method="POST" action="/admin/login">
+
+        <!-- Email -->
+        <div class="mb-3">
+
+          <label class="form-label">
+            Email Address
+          </label>
+
+          <div class="input-group">
+
+            <span class="input-group-text">
+              <i class="bi bi-envelope"></i>
+            </span>
+
+            <input
+              type="email"
+              name="email"
+              class="form-control"
+              placeholder="admin@mistry.com"
+              required
+            />
+
+          </div>
+
+        </div>
+
+        <!-- Password -->
+        <div class="mb-2">
+
+          <label class="form-label">
+            Password
+          </label>
+
+          <div class="input-group">
+
+            <span class="input-group-text">
+              <i class="bi bi-lock"></i>
+            </span>
+
+            <input
+              type="password"
+              name="password"
+              id="password"
+              class="form-control"
+              placeholder="Enter your password"
+              required
+            />
+
+            <button
+              type="button"
+              class="toggle-password"
+              onclick="togglePassword()"
+            >
+              <i class="bi bi-eye" id="eyeIcon"></i>
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- Options -->
+        <div class="options">
+
+          <div class="form-check">
+
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="remember"
+            />
+
+            <label
+              class="form-check-label"
+              for="remember"
+            >
+              Remember me
+            </label>
+
+          </div>
+
+          <a
+            href="/admin/forgot-password"
+            class="forgot-link"
+          >
+            Forgot password?
+          </a>
+
+        </div>
+
+        <!-- Button -->
+        <button
+          type="submit"
+          class="btn btn-login w-100"
+        >
+          <i class="bi bi-box-arrow-in-right me-2"></i>
+          Sign In
+        </button>
+
+      </form>
+
+    </div>
+
   </div>
 
-  <% if(error && error.length){ %><div class="alert alert-danger py-2 small">⚠️ <%= error %></div><% } %>
-  <% if(success && success.length){ %><div class="alert alert-success py-2 small">✅ <%= success %></div><% } %>
+  <!-- Script -->
+  <script>
 
-  <form method="POST" action="/admin/login">
-    <div class="mb-3">
-      <label class="form-label small fw-600">📧 Email Address</label>
-      <input type="email" name="email" class="form-control" placeholder="admin@mistry.com" required/>
-    </div>
-    <div class="mb-3">
-      <label class="form-label small fw-600">🔒 Password</label>
-      <div class="input-group">
-        <input type="password" name="password" id="pwd" class="form-control" placeholder="••••••••" required/>
-        <button type="button" class="btn btn-outline-secondary" onclick="togglePwd()"><i class="bi bi-eye" id="eyeIcon"></i></button>
-      </div>
-    </div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <div class="form-check"><input class="form-check-input" type="checkbox" id="rem"/><label class="form-check-label small" for="rem">Remember me</label></div>
-      <a href="/admin/forgot-password" class="small text-decoration-none" style="color:#6c47ff">Forgot password?</a>
-    </div>
-    <button type="submit" class="btn btn-login btn-primary w-100 text-white">Sign In →</button>
-  </form>
-</div>
-<script>
-function togglePwd(){const p=document.getElementById('pwd'),i=document.getElementById('eyeIcon');p.type=p.type==='password'?'text':'password';i.className=p.type==='password'?'bi bi-eye':'bi bi-eye-slash';}
-</script>
+    function togglePassword(){
+
+      const password =
+      document.getElementById('password');
+
+      const eye =
+      document.getElementById('eyeIcon');
+
+      if(password.type === 'password'){
+
+        password.type = 'text';
+
+        eye.className =
+        'bi bi-eye-slash';
+
+      }else{
+
+        password.type = 'password';
+
+        eye.className =
+        'bi bi-eye';
+
+      }
+
+    }
+
+  </script>
+
 </body>
 </html>

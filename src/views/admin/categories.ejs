@@ -1,21 +1,35 @@
 <%- include('partials/header') %>
 
-<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
-<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
 
-<div class="row g-3">
+<div class="row g-4">
   <!-- Add Category -->
   <div class="col-lg-4">
-    <div class="card">
-      <div class="card-header">➕ Add Category</div>
-      <div class="card-body">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-plus-circle me-2 text-primary"></i>Add New Category
+        </h6>
+      </div>
+      <div class="card-body p-4">
         <form method="POST" action="/admin/categories" enctype="multipart/form-data">
           <div class="mb-3">
-            <label class="form-label small">Category Name *</label>
-            <input type="text" name="name" class="form-control" placeholder="e.g. Plumbing" required/>
+            <label class="form-label fw-medium">Category Name <span class="text-danger">*</span></label>
+            <input type="text" name="name" class="form-control" placeholder="e.g. Plumbing Services" required/>
           </div>
           <div class="mb-3">
-            <label class="form-label small">Parent Category <small class="text-muted">(optional)</small></label>
+            <label class="form-label fw-medium">Parent Category <small class="text-muted">(optional)</small></label>
             <select name="parent_id" class="form-select">
               <option value="">None (Top Level)</option>
               <% categories.filter(c=>!c.parent_id).forEach(c=>{ %>
@@ -23,11 +37,14 @@
               <% }) %>
             </select>
           </div>
-          <div class="mb-3">
-            <label class="form-label small">Icon / Image</label>
+          <div class="mb-4">
+            <label class="form-label fw-medium">Category Icon</label>
             <input type="file" name="image" class="form-control" accept="image/*"/>
+            <div class="form-text">Upload an icon or image for this category</div>
           </div>
-          <button class="btn btn-primary w-100">➕ Add Category</button>
+          <button class="btn btn-primary w-100">
+            <i class="bi bi-plus-lg me-1"></i>Add Category
+          </button>
         </form>
       </div>
     </div>
@@ -35,64 +52,128 @@
 
   <!-- Categories List -->
   <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header">🏷️ All Categories <span class="badge bg-primary ms-1"><%= categories.length %></span></div>
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-tags me-2 text-primary"></i>All Categories
+          </h6>
+          <span class="badge bg-primary"><%= categories.length %> total</span>
+        </div>
+      </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead><tr><th>#</th><th>Image</th><th>Name</th><th>Parent</th><th>Status</th><th>Actions</th></tr></thead>
+          <thead class="table-light">
+            <tr><th>#</th><th>Icon</th><th>Category Name</th><th>Parent Category</th><th>Status</th><th>Actions</th></tr>
+          </thead>
           <tbody>
           <% categories.forEach((c,i) => {
                const parent = categories.find(p=>p.id===c.parent_id);
           %>
             <tr>
-              <td class="text-muted small"><%= i+1 %></td>
+              <td class="text-muted small fw-medium"><%= i+1 %></td>
               <td>
-                <% if(c.image){ %><img src="/uploads/<%= c.image %>" style="width:36px;height:36px;border-radius:8px;object-fit:cover"/>
-                <% } else { %><div style="width:36px;height:36px;border-radius:8px;background:#f0f0f8;display:flex;align-items:center;justify-content:center;font-size:1.2rem">🏷️</div><% } %>
+                <% if(c.image){ %>
+                  <img src="/uploads/<%= c.image %>" class="rounded" style="width:40px;height:40px;object-fit:cover"/>
+                <% } else { %>
+                  <div class="bg-primary bg-opacity-10 rounded d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                    <i class="bi bi-tag text-primary"></i>
+                  </div>
+                <% } %>
               </td>
-              <td class="fw-semibold"><%= c.name %></td>
-              <td><%= parent ? parent.name : '<span class="text-muted">—</span>' %></td>
-              <td><span class="badge bg-<%= c.is_active?'success':'secondary' %>"><%= c.is_active?'✅ Active':'⏸️ Inactive' %></span></td>
+              <td class="fw-semibold text-dark"><%= c.name %></td>
               <td>
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal<%= c.id %>">✏️</button>
-                <form method="POST" action="/admin/categories/<%= c.id %>/delete" style="display:inline">
-                  <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this category?')">🗑️</button>
-                </form>
+                <% if(parent){ %>
+                  <span class="badge bg-light text-dark border"><%= parent.name %></span>
+                <% } else { %>
+                  <span class="text-muted small">Top Level</span>
+                <% } %>
+              </td>
+              <td>
+                <span class="badge <%= c.is_active ? 'bg-success' : 'bg-secondary' %> rounded-pill">
+                  <i class="bi <%= c.is_active ? 'bi-check-circle' : 'bi-pause-circle' %> me-1" style="font-size:10px;"></i>
+                  <%= c.is_active ? 'Active' : 'Inactive' %>
+                </span>
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal<%= c.id %>" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form method="POST" action="/admin/categories/<%= c.id %>/delete" class="d-inline">
+                    <button class="btn btn-outline-danger" onclick="return confirm('Delete this category?')" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
               </td>
             </tr>
 
             <!-- Edit Modal -->
             <div class="modal fade" id="editModal<%= c.id %>" tabindex="-1">
-              <div class="modal-dialog"><div class="modal-content">
-                <div class="modal-header"><h6 class="modal-title">✏️ Edit: <%= c.name %></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                <form method="POST" action="/admin/categories/<%= c.id %>/update" enctype="multipart/form-data">
-                  <div class="modal-body">
-                    <div class="mb-3"><label class="form-label small">Name</label><input type="text" name="name" class="form-control" value="<%= c.name %>" required/></div>
-                    <div class="mb-3">
-                      <label class="form-label small">Parent</label>
-                      <select name="parent_id" class="form-select">
-                        <option value="">None</option>
-                        <% categories.filter(p=>p.id!==c.id&&!p.parent_id).forEach(p=>{ %>
-                          <option value="<%= p.id %>" <%= c.parent_id===p.id?'selected':'' %>><%= p.name %></option>
-                        <% }) %>
-                      </select>
-                    </div>
-                    <div class="mb-3"><label class="form-label small">New Image <small class="text-muted">(optional)</small></label><input type="file" name="image" class="form-control" accept="image/*"/></div>
-                    <div class="mb-3">
-                      <label class="form-label small">Status</label>
-                      <select name="is_active" class="form-select">
-                        <option value="1" <%= c.is_active?'selected':'' %>>✅ Active</option>
-                        <option value="0" <%= !c.is_active?'selected':'' %>>⏸️ Inactive</option>
-                      </select>
-                    </div>
+              <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow">
+                  <div class="modal-header bg-light border-bottom">
+                    <h6 class="modal-title fw-semibold">
+                      <i class="bi bi-pencil text-primary me-2"></i>Edit Category: <%= c.name %>
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
-                  <div class="modal-footer"><button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn btn-primary btn-sm">💾 Save</button></div>
-                </form>
-              </div></div>
+                  <form method="POST" action="/admin/categories/<%= c.id %>/update" enctype="multipart/form-data">
+                    <div class="modal-body p-4">
+                      <div class="mb-3">
+                        <label class="form-label fw-medium">Category Name</label>
+                        <input type="text" name="name" class="form-control" value="<%= c.name %>" required/>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label fw-medium">Parent Category</label>
+                        <select name="parent_id" class="form-select">
+                          <option value="">None (Top Level)</option>
+                          <% categories.filter(p=>p.id!==c.id&&!p.parent_id).forEach(p=>{ %>
+                            <option value="<%= p.id %>" <%= c.parent_id===p.id?'selected':'' %>><%= p.name %></option>
+                          <% }) %>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label fw-medium">New Icon <small class="text-muted">(optional)</small></label>
+                        <input type="file" name="image" class="form-control" accept="image/*"/>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label fw-medium">Status</label>
+                        <select name="is_active" class="form-select">
+                          <option value="1" <%= c.is_active?'selected':'' %>>
+                            <i class="bi bi-check-circle"></i> Active
+                          </option>
+                          <option value="0" <%= !c.is_active?'selected':'' %>>
+                            <i class="bi bi-pause-circle"></i> Inactive
+                          </option>
+                        </select>
+                      </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cancel
+                      </button>
+                      <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
             </div>
 
           <% }) %>
-          <% if(!categories.length){ %><tr><td colspan="6" class="text-center text-muted py-4">No categories yet</td></tr><% } %>
+          <% if(!categories.length){ %>
+            <tr>
+              <td colspan="6" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-tags" style="font-size:2rem;"></i>
+                  <p class="mt-2 mb-0">No categories created yet</p>
+                </div>
+              </td>
+            </tr>
+          <% } %>
           </tbody>
         </table>
       </div>

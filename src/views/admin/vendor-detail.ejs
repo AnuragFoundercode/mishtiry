@@ -1,26 +1,62 @@
 <%- include('partials/header') %>
 
-<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
-<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
 
 <!-- Page Header -->
-<div class="d-flex flex-wrap align-items-center gap-2 mb-4">
-  <a href="/admin/vendors" class="btn btn-sm btn-light">← Back</a>
-  <h5 class="mb-0 fw-bold">🏪 <%= vendor.business_name || 'Unnamed Vendor' %></h5>
-  <% if(vendor.is_suspended){ %><span class="badge bg-danger">🚫 Suspended</span>
-  <% } else if(vendor.is_approved){ %><span class="badge bg-success">✅ Approved</span>
-  <% } else { %><span class="badge bg-secondary">⏸️ Pending</span><% } %>
-  <% if(vendor.is_featured){ %><span class="badge bg-warning text-dark">⭐ Featured</span><% } %>
-  <div class="ms-auto d-flex gap-2">
-    <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">✏️ Edit Profile</button>
-    <form method="POST" action="/admin/vendors/<%= vendor.id %>/toggle-featured">
-      <button class="btn btn-sm <%= vendor.is_featured?'btn-warning':'btn-outline-warning' %>">
-        <%= vendor.is_featured ? '⭐ Remove Featured' : '⭐ Mark Featured' %>
+<div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+  <a href="/admin/vendors" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back to Vendors
+  </a>
+  <div class="flex-grow-1">
+    <h4 class="mb-1 fw-bold text-dark">
+      <i class="bi bi-shop me-2 text-primary"></i><%= vendor.business_name || 'Unnamed Vendor' %>
+    </h4>
+    <div class="d-flex gap-2 flex-wrap">
+      <% if(vendor.is_suspended){ %>
+        <span class="badge bg-danger rounded-pill">
+          <i class="bi bi-x-circle me-1" style="font-size:10px;"></i>Suspended
+        </span>
+      <% } else if(vendor.is_approved){ %>
+        <span class="badge bg-success rounded-pill">
+          <i class="bi bi-check-circle me-1" style="font-size:10px;"></i>Approved
+        </span>
+      <% } else { %>
+        <span class="badge bg-secondary rounded-pill">
+          <i class="bi bi-pause-circle me-1" style="font-size:10px;"></i>Pending
+        </span>
+      <% } %>
+      <% if(vendor.is_featured){ %>
+        <span class="badge bg-warning text-dark rounded-pill">
+          <i class="bi bi-star-fill me-1" style="font-size:10px;"></i>Featured
+        </span>
+      <% } %>
+    </div>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+      <i class="bi bi-pencil me-1"></i>Edit Profile
+    </button>
+    <form method="POST" action="/admin/vendors/<%= vendor.id %>/toggle-featured" class="d-inline">
+      <button class="btn <%= vendor.is_featured?'btn-warning':'btn-outline-warning' %>">
+        <i class="bi bi-star<%= vendor.is_featured?'-fill':'' %> me-1"></i>
+        <%= vendor.is_featured ? 'Remove Featured' : 'Mark Featured' %>
       </button>
     </form>
-    <form method="POST" action="/admin/vendors/<%= vendor.id %>/toggle-suspend">
-      <button class="btn btn-sm <%= vendor.is_suspended?'btn-success':'btn-danger' %>" onclick="return confirm('Are you sure?')">
-        <%= vendor.is_suspended ? '✅ Unsuspend' : '🚫 Suspend' %>
+    <form method="POST" action="/admin/vendors/<%= vendor.id %>/toggle-suspend" class="d-inline">
+      <button class="btn <%= vendor.is_suspended?'btn-success':'btn-danger' %>" onclick="return confirm('Are you sure?')">
+        <i class="bi bi-<%= vendor.is_suspended?'check':'x' %>-circle me-1"></i>
+        <%= vendor.is_suspended ? 'Unsuspend' : 'Suspend' %>
       </button>
     </form>
   </div>
@@ -29,30 +65,38 @@
 <!-- Stats -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3">
-    <div class="card text-center py-3">
-      <div style="font-size:1.8rem">📅</div>
-      <h5 class="mb-0 fw-bold mt-1"><%= totalBookings %></h5>
+    <div class="card border-0 shadow-sm text-center py-4">
+      <div class="mb-2">
+        <i class="bi bi-calendar-check text-primary" style="font-size:2rem;"></i>
+      </div>
+      <h4 class="mb-1 fw-bold text-dark"><%= totalBookings %></h4>
       <small class="text-muted">Total Bookings</small>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card text-center py-3">
-      <div style="font-size:1.8rem">💰</div>
-      <h5 class="mb-0 fw-bold mt-1">₹<%= parseFloat(totalEarnings).toFixed(0) %></h5>
+    <div class="card border-0 shadow-sm text-center py-4">
+      <div class="mb-2">
+        <i class="bi bi-currency-rupee text-success" style="font-size:2rem;"></i>
+      </div>
+      <h4 class="mb-1 fw-bold text-dark">₹<%= parseFloat(totalEarnings).toFixed(0) %></h4>
       <small class="text-muted">Total Earnings</small>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card text-center py-3">
-      <div style="font-size:1.8rem">⭐</div>
-      <h5 class="mb-0 fw-bold mt-1"><%= vendor.avg_rating || '0.0' %></h5>
+    <div class="card border-0 shadow-sm text-center py-4">
+      <div class="mb-2">
+        <i class="bi bi-star-fill text-warning" style="font-size:2rem;"></i>
+      </div>
+      <h4 class="mb-1 fw-bold text-dark"><%= vendor.avg_rating || '0.0' %></h4>
       <small class="text-muted">Avg Rating</small>
     </div>
   </div>
   <div class="col-6 col-md-3">
-    <div class="card text-center py-3">
-      <div style="font-size:1.8rem">💬</div>
-      <h5 class="mb-0 fw-bold mt-1"><%= vendor.total_reviews || 0 %></h5>
+    <div class="card border-0 shadow-sm text-center py-4">
+      <div class="mb-2">
+        <i class="bi bi-chat-dots text-info" style="font-size:2rem;"></i>
+      </div>
+      <h4 class="mb-1 fw-bold text-dark"><%= vendor.total_reviews || 0 %></h4>
       <small class="text-muted">Reviews</small>
     </div>
   </div>
@@ -63,26 +107,37 @@
   <div class="col-lg-6">
 
     <!-- Basic Info -->
-    <div class="card mb-3">
-      <div class="card-header">📋 Business Info</div>
+    <div class="card mb-3 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-info-circle me-2 text-primary"></i>Business Information
+        </h6>
+      </div>
       <div class="card-body p-0">
         <table class="table table-sm mb-0">
-          <tr><td class="text-muted ps-3" width="38%">Owner</td><td><%= vendor.User?.name||'—' %></td></tr>
-          <tr><td class="text-muted ps-3">Mobile</td><td>📱 <%= vendor.User?.mobile||'—' %></td></tr>
-          <tr><td class="text-muted ps-3">Email</td><td>📧 <%= vendor.User?.email||'—' %></td></tr>
-          <tr><td class="text-muted ps-3">Address</td><td><%= vendor.address||'—' %></td></tr>
-          <tr><td class="text-muted ps-3">Joined</td><td><%= formatDate(vendor.created_at || vendor.createdAt) %></td></tr>
+          <tr><td class="text-muted ps-3 fw-medium" width="38%">Owner Name</td><td class="fw-medium"><%= vendor.User?.name||'—' %></td></tr>
+          <tr><td class="text-muted ps-3 fw-medium">Mobile</td><td><i class="bi bi-phone text-muted me-2"></i><%= vendor.User?.mobile||'—' %></td></tr>
+          <tr><td class="text-muted ps-3 fw-medium">Email</td><td><i class="bi bi-envelope text-muted me-2"></i><%= vendor.User?.email||'—' %></td></tr>
+          <tr><td class="text-muted ps-3 fw-medium">Address</td><td><%= vendor.address||'—' %></td></tr>
+          <tr><td class="text-muted ps-3 fw-medium">Joined Date</td><td><i class="bi bi-calendar3 text-muted me-2"></i><%= formatDate(vendor.created_at || vendor.createdAt) %></td></tr>
         </table>
       </div>
     </div>
 
     <!-- KYC -->
-    <div class="card mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>🪪 KYC Documents</span>
-        <% const kc={pending:'secondary',under_review:'warning',approved:'success',rejected:'danger'};
-           const ke={pending:'⏸️',under_review:'⏳',approved:'✅',rejected:'❌'}; %>
-        <span class="badge bg-<%= kc[vendor.kyc_status] %>"><%= ke[vendor.kyc_status] %> <%= vendor.kyc_status %></span>
+    <div class="card mb-3 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-shield-check me-2 text-primary"></i>KYC Documents
+        </h6>
+        <% const kc={pending:'secondary',under_review:'warning',approved:'success',rejected:'danger'}; %>
+        <span class="badge bg-<%= kc[vendor.kyc_status] %> rounded-pill">
+          <% if(vendor.kyc_status === 'pending'){ %><i class="bi bi-pause-circle me-1" style="font-size:10px;"></i>
+          <% } else if(vendor.kyc_status === 'under_review'){ %><i class="bi bi-clock-history me-1" style="font-size:10px;"></i>
+          <% } else if(vendor.kyc_status === 'approved'){ %><i class="bi bi-check-circle me-1" style="font-size:10px;"></i>
+          <% } else if(vendor.kyc_status === 'rejected'){ %><i class="bi bi-x-circle me-1" style="font-size:10px;"></i><% } %>
+          <%= vendor.kyc_status %>
+        </span>
       </div>
       <div class="card-body">
         <% if(vendor.VendorKyc){ const k=vendor.VendorKyc; %>
@@ -104,16 +159,24 @@
             <div class="col-md-5">
               <select name="status" class="form-select form-select-sm" required>
                 <option value="">-- Select Action --</option>
-                <option value="approved">✅ Approve KYC</option>
-                <option value="rejected">❌ Reject KYC</option>
-                <option value="under_review">⏳ Under Review</option>
+                <option value="approved">
+                  <i class="bi bi-check-circle"></i> Approve KYC
+                </option>
+                <option value="rejected">
+                  <i class="bi bi-x-circle"></i> Reject KYC
+                </option>
+                <option value="under_review">
+                  <i class="bi bi-clock-history"></i> Under Review
+                </option>
               </select>
             </div>
             <div class="col-md-5">
-              <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Rejection reason"/>
+              <input type="text" name="rejection_reason" class="form-control form-control-sm" placeholder="Rejection reason (if rejecting)"/>
             </div>
             <div class="col-md-2">
-              <button class="btn btn-sm btn-primary w-100">Save</button>
+              <button class="btn btn-sm btn-primary w-100">
+                <i class="bi bi-check-lg"></i>
+              </button>
             </div>
           </div>
         </form>
@@ -121,8 +184,12 @@
     </div>
 
     <!-- Bank Details -->
-    <div class="card mb-3">
-      <div class="card-header">🏦 Bank Details</div>
+    <div class="card mb-3 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-bank me-2 text-primary"></i>Bank Details
+        </h6>
+      </div>
       <div class="card-body p-0">
         <% if(vendor.VendorBankDetail){ const b=vendor.VendorBankDetail; %>
           <table class="table table-sm mb-0">

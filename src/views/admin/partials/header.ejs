@@ -116,7 +116,9 @@
 <!-- Sidebar -->
 <div id="sidebar">
   <div class="sidebar-brand">
-    <div class="logo">🔧</div>
+    <div class="logo">
+      <i class="bi bi-tools text-white"></i>
+    </div>
     <div class="brand-text"><strong>Mistry</strong><span>Admin Panel</span></div>
   </div>
   <nav>
@@ -165,43 +167,323 @@
   </div>
 </div>
 
-<!-- Change Password Modal (global, available on all pages) -->
-<div class="modal fade" id="changePwdModal" tabindex="-1">
-  <div class="modal-dialog modal-dialog-centered" style="max-width:420px">
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePwdModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
+
+      <!-- Header -->
       <div class="modal-header">
-        <h6 class="modal-title">🔑 Change Password</h6>
+        <h5 class="modal-title">
+          <span class="modal-icon">
+            <i class="bi bi-shield-lock-fill"></i>
+          </span>
+          Change Password
+        </h5>
+
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
+
+      <!-- Form -->
       <form method="POST" action="/admin/change-password">
+
         <div class="modal-body">
+
           <% if(typeof error !== 'undefined' && error && error.length){ %>
-            <div class="alert alert-danger py-2 small">⚠️ <%= error %></div>
+            <div class="alert alert-danger">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i>
+              <%= error %>
+            </div>
           <% } %>
-          <% if(typeof success !== 'undefined' && success && success.length && page === 'settings'){ %>
-            <div class="alert alert-success py-2 small">✅ <%= success %></div>
+
+          <% if(typeof success !== 'undefined' && success && success.length){ %>
+            <div class="alert alert-success">
+              <i class="bi bi-check-circle-fill me-1"></i>
+              <%= success %>
+            </div>
           <% } %>
+
+          <!-- Current Password -->
           <div class="mb-3">
             <label class="form-label">Current Password</label>
-            <input type="password" name="current" class="form-control" required placeholder="••••••••"/>
+
+            <div class="input-group custom-input">
+              <span class="input-group-text">
+                <i class="bi bi-lock-fill"></i>
+              </span>
+
+              <input
+                type="password"
+                name="current"
+                class="form-control"
+                placeholder="Enter current password"
+                required
+              >
+            </div>
           </div>
+
+          <!-- New Password -->
           <div class="mb-3">
             <label class="form-label">New Password</label>
-            <input type="password" name="password" class="form-control" required minlength="8" placeholder="Min 8 characters"/>
+
+            <div class="input-group custom-input">
+              <span class="input-group-text">
+                <i class="bi bi-key-fill"></i>
+              </span>
+
+              <input
+                type="password"
+                name="password"
+                class="form-control"
+                minlength="8"
+                placeholder="Minimum 8 characters"
+                required
+              >
+            </div>
           </div>
-          <div class="mb-1">
-            <label class="form-label">Confirm New Password</label>
-            <input type="password" name="confirm" class="form-control" required placeholder="Repeat password"/>
+
+          <!-- Confirm Password -->
+          <div class="mb-2">
+            <label class="form-label">Confirm Password</label>
+
+            <div class="input-group custom-input">
+              <span class="input-group-text">
+                <i class="bi bi-shield-check"></i>
+              </span>
+
+              <input
+                type="password"
+                name="confirm"
+                class="form-control"
+                placeholder="Repeat new password"
+                required
+              >
+            </div>
           </div>
+
         </div>
+
+        <!-- Footer -->
         <div class="modal-footer">
-          <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm">💾 Update Password</button>
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            Cancel
+          </button>
+
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>
+            Update Password
+          </button>
         </div>
+
       </form>
     </div>
   </div>
 </div>
+
+<style>
+
+/* BACKDROP */
+.modal.fade .modal-dialog{
+  transform: scale(.92) translateY(20px);
+  transition: all .25s ease;
+}
+
+.modal.show .modal-dialog{
+  transform: scale(1) translateY(0);
+}
+
+/* MODAL BOX */
+.modal-content{
+  border: none;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 25px 60px rgba(0,0,0,.15);
+}
+
+/* HEADER */
+.modal-header{
+  border-bottom: 1px solid #f1f1f4;
+  padding: 22px 24px;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(108,71,255,.08),
+      rgba(168,85,247,.08)
+    );
+}
+
+.modal-title{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* ICON */
+.modal-icon{
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: linear-gradient(
+    135deg,
+    #6c47ff,
+    #8b5cf6
+  );
+
+  color: #fff;
+  font-size: 1rem;
+
+  box-shadow: 0 8px 18px rgba(108,71,255,.25);
+}
+
+/* BODY */
+.modal-body{
+  padding: 24px;
+}
+
+/* LABELS */
+.form-label{
+  font-size: .83rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #4b5563;
+}
+
+/* INPUT GROUP */
+.custom-input{
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  transition: .2s ease;
+}
+
+.custom-input:focus-within{
+  border-color: #6c47ff;
+  box-shadow: 0 0 0 4px rgba(108,71,255,.10);
+  background: #fff;
+}
+
+/* ICON SIDE */
+.custom-input .input-group-text{
+  background: transparent;
+  border: none;
+  padding-left: 14px;
+  color: #6b7280;
+}
+
+/* INPUT */
+.custom-input .form-control{
+  border: none;
+  box-shadow: none !important;
+  background: transparent;
+  height: 50px;
+  font-size: .88rem;
+  padding-left: 10px;
+}
+
+/* FOOTER */
+.modal-footer{
+  border-top: 1px solid #f1f1f4;
+  padding: 18px 24px;
+  background: #fafafe;
+}
+
+/* BUTTONS */
+.modal .btn{
+  border-radius: 12px;
+  font-size: .85rem;
+  font-weight: 600;
+  padding: 10px 18px;
+}
+
+/* PRIMARY BUTTON */
+.modal .btn-primary{
+  border: none;
+
+  background: linear-gradient(
+    135deg,
+    #6c47ff,
+    #8b5cf6
+  );
+
+  box-shadow: 0 10px 20px rgba(108,71,255,.22);
+
+  transition: .2s ease;
+}
+
+.modal .btn-primary:hover{
+  transform: translateY(-1px);
+  box-shadow: 0 14px 24px rgba(108,71,255,.28);
+}
+
+/* LIGHT BUTTON */
+.modal .btn-light{
+  background: #eef1f7;
+  border: none;
+  color: #4b5563;
+}
+
+.modal .btn-light:hover{
+  background: #e5e7eb;
+}
+
+/* ALERTS */
+.alert{
+  border: none;
+  border-radius: 12px;
+  font-size: .82rem;
+  padding: 12px 14px;
+}
+
+.alert-danger{
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.alert-success{
+  background: #ecfdf5;
+  color: #047857;
+}
+
+/* CLOSE BUTTON */
+.btn-close{
+  opacity: .5;
+  transition: .2s;
+}
+
+.btn-close:hover{
+  opacity: 1;
+  transform: rotate(90deg);
+}
+
+/* MOBILE */
+@media(max-width:576px){
+
+  .modal-dialog{
+    margin: 14px;
+  }
+
+  .modal-content{
+    border-radius: 20px;
+  }
+
+  .modal-body,
+  .modal-header,
+  .modal-footer{
+    padding: 18px;
+  }
+
+}
+
+</style>
 
 <!-- Main Content -->
 <div id="main">

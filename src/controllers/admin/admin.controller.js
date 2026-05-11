@@ -278,7 +278,7 @@ const deletePolicy = async (req, res) => {
  */
 const getZones = async (req, res) => {
   try {
-    const zones = await Zone.findAll({ order: [['city', 'ASC'], ['name', 'ASC']] });
+    const zones = await Zone.findAll({ order: [['name', 'ASC']] });
     return success(res, { zones });
   } catch (err) {
     return error(res, err.message);
@@ -287,11 +287,20 @@ const getZones = async (req, res) => {
 
 /**
  * POST /api/admin/zones
+ * Body: { name, coordinates: [{lat, lng}, ...], color, is_active }
  */
 const createZone = async (req, res) => {
   try {
-    const { name, center_lat, center_lng, radius_km, color, is_active } = req.body;
-    const zone = await Zone.create({ name, center_lat, center_lng, radius_km, color: color || '#6c47ff', is_active: is_active ?? true });
+    const { name, coordinates, color, is_active } = req.body;
+    if (!coordinates || !Array.isArray(coordinates) || coordinates.length < 3) {
+      return error(res, 'Coordinates must be array with at least 3 points', 400);
+    }
+    const zone = await Zone.create({ 
+      name, 
+      coordinates, 
+      color: color || '#6c47ff', 
+      is_active: is_active ?? true 
+    });
     return success(res, { zone }, 'Zone created', 201);
   } catch (err) {
     return error(res, err.message);
@@ -300,13 +309,17 @@ const createZone = async (req, res) => {
 
 /**
  * PUT /api/admin/zones/:id
+ * Body: { name, coordinates: [{lat, lng}, ...], color, is_active }
  */
 const updateZone = async (req, res) => {
   try {
     const zone = await Zone.findByPk(req.params.id);
     if (!zone) return error(res, 'Zone not found', 404);
-    const { name, center_lat, center_lng, radius_km, color, is_active } = req.body;
-    await zone.update({ name, center_lat, center_lng, radius_km, color, is_active });
+    const { name, coordinates, color, is_active } = req.body;
+    if (coordinates && (!Array.isArray(coordinates) || coordinates.length < 3)) {
+      return error(res, 'Coordinates must be array with at least 3 points', 400);
+    }
+    await zone.update({ name, coordinates, color, is_active });
     return success(res, { zone }, 'Zone updated');
   } catch (err) {
     return error(res, err.message);

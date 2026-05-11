@@ -1,41 +1,101 @@
 <%- include('partials/header') %>
 
-<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
 
-<div class="card">
-  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-    <span>🔧 Services <span class="badge bg-primary ms-1"><%= total %></span></span>
-    <form class="d-flex gap-2" method="GET">
-      <input type="text" name="search" class="form-control form-control-sm" placeholder="🔍 Search service" value="<%= search %>" style="width:200px"/>
-      <button class="btn btn-sm btn-primary">Search</button>
-      <% if(search){ %><a href="/admin/services" class="btn btn-sm btn-outline-secondary">Clear</a><% } %>
-    </form>
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1 fw-bold text-dark">
+          <i class="bi bi-tools me-2 text-primary"></i>Services Management
+        </h5>
+        <p class="text-muted small mb-0">Total: <span class="badge bg-primary"><%= total %></span> services</p>
+      </div>
+      <form class="d-flex gap-2" method="GET">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input type="text" name="search" class="form-control border-start-0" placeholder="Search services" value="<%= search %>" style="width:200px"/>
+        </div>
+        <button class="btn btn-primary">
+          <i class="bi bi-search me-1"></i>Search
+        </button>
+        <% if(search){ %>
+          <a href="/admin/services" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        <% } %>
+      </form>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>#</th><th>Service</th><th>Vendor</th><th>Category</th><th>Price</th><th>Status</th><th>Action</th></tr></thead>
+      <thead class="table-light">
+        <tr><th>#</th><th>Service Details</th><th>Vendor</th><th>Category</th><th>Pricing</th><th>Status</th><th>Actions</th></tr>
+      </thead>
       <tbody>
       <% services.forEach((s,i) => { %>
         <tr>
-          <td class="text-muted small"><%= (currentPage-1)*15+i+1 %></td>
+          <td class="text-muted small fw-medium"><%= (currentPage-1)*15+i+1 %></td>
           <td>
-            <div class="fw-semibold"><%= s.name %></div>
-            <small class="text-muted"><%= s.estimated_time ? '⏱️ '+s.estimated_time : '' %></small>
+            <div class="fw-semibold text-dark"><%= s.name %></div>
+            <% if(s.estimated_time){ %>
+              <small class="text-muted">
+                <i class="bi bi-clock me-1"></i><%= s.estimated_time %>
+              </small>
+            <% } %>
           </td>
-          <td>🏪 <%= s.Vendor?.business_name||'—' %></td>
-          <td>🏷️ <%= s.Category?.name||'—' %></td>
-          <td class="fw-semibold">₹<%= parseFloat(s.price).toFixed(0) %></td>
-          <td><span class="badge bg-<%= s.is_active?'success':'secondary' %>"><%= s.is_active?'✅ Active':'⏸️ Inactive' %></span></td>
           <td>
-            <form method="POST" action="/admin/services/<%= s.id %>/toggle" style="display:inline">
+            <div class="d-flex align-items-center gap-1">
+              <i class="bi bi-shop text-muted" style="font-size:12px;"></i>
+              <span class="fw-medium"><%= s.Vendor?.business_name||'—' %></span>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-1">
+              <i class="bi bi-tag text-muted" style="font-size:12px;"></i>
+              <span><%= s.Category?.name||'—' %></span>
+            </div>
+          </td>
+          <td class="fw-semibold text-dark">₹<%= parseFloat(s.price).toFixed(0) %></td>
+          <td>
+            <span class="badge <%= s.is_active ? 'bg-success' : 'bg-secondary' %> rounded-pill">
+              <i class="bi <%= s.is_active ? 'bi-check-circle' : 'bi-pause-circle' %> me-1" style="font-size:10px;"></i>
+              <%= s.is_active ? 'Active' : 'Inactive' %>
+            </span>
+          </td>
+          <td>
+            <form method="POST" action="/admin/services/<%= s.id %>/toggle" class="d-inline">
               <button class="btn btn-sm <%= s.is_active?'btn-outline-warning':'btn-outline-success' %>">
-                <%= s.is_active ? '⏸️ Disable' : '✅ Enable' %>
+                <% if(s.is_active){ %>
+                  <i class="bi bi-pause-circle me-1"></i>Disable
+                <% } else { %>
+                  <i class="bi bi-check-circle me-1"></i>Enable
+                <% } %>
               </button>
             </form>
           </td>
         </tr>
       <% }) %>
-      <% if(!services.length){ %><tr><td colspan="7" class="text-center text-muted py-4">No services found</td></tr><% } %>
+      <% if(!services.length){ %>
+        <tr>
+          <td colspan="7" class="text-center py-5">
+            <div class="text-muted">
+              <i class="bi bi-tools" style="font-size:2rem;"></i>
+              <p class="mt-2 mb-0">No services found</p>
+              <% if(search){ %>
+                <small>Try adjusting your search criteria</small>
+              <% } %>
+            </div>
+          </td>
+        </tr>
+      <% } %>
       </tbody>
     </table>
   </div>

@@ -1,42 +1,122 @@
 <%- include('partials/header') %>
 
-<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
-<% if(error&&error.length){ %><div class="alert alert-danger">⚠️ <%= error %></div><% } %>
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
 
-<div class="card">
-  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-    <span>👥 Users <span class="badge bg-primary ms-1"><%= total %></span></span>
-    <form class="d-flex gap-2" method="GET">
-      <input type="text" name="search" class="form-control form-control-sm" placeholder="🔍 Search name / mobile" value="<%= search %>" style="width:220px"/>
-      <button class="btn btn-sm btn-primary">Search</button>
-      <% if(search){ %><a href="/admin/users" class="btn btn-sm btn-outline-secondary">Clear</a><% } %>
-    </form>
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1 fw-bold text-dark">
+          <i class="bi bi-people me-2 text-primary"></i>Users Management
+        </h5>
+        <p class="text-muted small mb-0">Total: <span class="badge bg-primary"><%= total %></span> registered users</p>
+      </div>
+      <form class="d-flex gap-2" method="GET">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0">
+            <i class="bi bi-search text-muted"></i>
+          </span>
+          <input type="text" name="search" class="form-control border-start-0" placeholder="Search name or mobile" value="<%= search %>" style="width:250px"/>
+        </div>
+        <button class="btn btn-primary">
+          <i class="bi bi-search me-1"></i>Search
+        </button>
+        <% if(search){ %>
+          <a href="/admin/users" class="btn btn-outline-secondary">
+            <i class="bi bi-x-lg"></i>
+          </a>
+        <% } %>
+      </form>
+    </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>#</th><th>Name</th><th>Mobile</th><th>Email</th><th>Joined</th><th>Status</th><th>Action</th></tr></thead>
+      <thead class="table-light">
+        <tr><th>#</th><th>User Details</th><th>Contact Info</th><th>Joined Date</th><th>Account Status</th><th>Actions</th></tr>
+      </thead>
       <tbody>
       <% users.forEach((u,i) => { %>
         <tr>
-          <td class="text-muted small"><%= (currentPage-1)*15 + i+1 %></td>
-          <td><%= u.name || '—' %></td>
-          <td>📱 <%= u.mobile %></td>
-          <td><%= u.email || '—' %></td>
-          <td class="text-muted small"><%= formatDate(u.created_at || u.createdAt) %></td>
+          <td class="text-muted small fw-medium"><%= (currentPage-1)*15 + i+1 %></td>
           <td>
-            <% if(u.is_blocked){ %><span class="badge bg-danger">🚫 Blocked</span>
-            <% } else { %><span class="badge bg-success">✅ Active</span><% } %>
+            <div class="d-flex align-items-center gap-3">
+              <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:40px;height:40px;">
+                <i class="bi bi-person-fill text-primary"></i>
+              </div>
+              <div>
+                <div class="fw-semibold text-dark"><%= u.name || 'No Name' %></div>
+                <small class="text-muted">User ID: #<%= u.id %></small>
+              </div>
+            </div>
           </td>
           <td>
-            <form method="POST" action="/admin/users/<%= u.id %>/toggle-block" style="display:inline">
+            <div class="mb-1">
+              <i class="bi bi-phone text-muted me-1" style="font-size:12px;"></i>
+              <span class="fw-medium"><%= u.mobile %></span>
+            </div>
+            <% if(u.email){ %>
+              <div>
+                <i class="bi bi-envelope text-muted me-1" style="font-size:12px;"></i>
+                <small class="text-muted"><%= u.email %></small>
+              </div>
+            <% } else { %>
+              <small class="text-muted">No email provided</small>
+            <% } %>
+          </td>
+          <td>
+            <div class="text-muted small">
+              <i class="bi bi-calendar3 me-1"></i>
+              <%= formatDate(u.created_at || u.createdAt) %>
+            </div>
+          </td>
+          <td>
+            <% if(u.is_blocked){ %>
+              <span class="badge bg-danger rounded-pill">
+                <i class="bi bi-x-circle me-1" style="font-size:10px;"></i>Blocked
+              </span>
+            <% } else { %>
+              <span class="badge bg-success rounded-pill">
+                <i class="bi bi-check-circle me-1" style="font-size:10px;"></i>Active
+              </span>
+            <% } %>
+          </td>
+          <td>
+            <form method="POST" action="/admin/users/<%= u.id %>/toggle-block" class="d-inline">
               <button class="btn btn-sm <%= u.is_blocked ? 'btn-success' : 'btn-danger' %>" onclick="return confirm('<%= u.is_blocked ? 'Unblock' : 'Block' %> this user?')">
-                <%= u.is_blocked ? '✅ Unblock' : '🚫 Block' %>
+                <% if(u.is_blocked){ %>
+                  <i class="bi bi-check-circle me-1"></i>Unblock
+                <% } else { %>
+                  <i class="bi bi-x-circle me-1"></i>Block
+                <% } %>
               </button>
             </form>
           </td>
         </tr>
       <% }) %>
-      <% if(!users.length){ %><tr><td colspan="7" class="text-center text-muted py-4">No users found</td></tr><% } %>
+      <% if(!users.length){ %>
+        <tr>
+          <td colspan="6" class="text-center py-5">
+            <div class="text-muted">
+              <i class="bi bi-people" style="font-size:2rem;"></i>
+              <p class="mt-2 mb-0">No users found</p>
+              <% if(search){ %>
+                <small>Try adjusting your search criteria</small>
+              <% } %>
+            </div>
+          </td>
+        </tr>
+      <% } %>
       </tbody>
     </table>
   </div>

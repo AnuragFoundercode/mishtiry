@@ -1,32 +1,78 @@
 <%- include('partials/header') %>
 
-<% if(success&&success.length){ %><div class="alert alert-success">✅ <%= success %></div><% } %>
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
 
-<div class="card">
-  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-    <span>📅 Bookings <span class="badge bg-primary ms-1"><%= total %></span></span>
-    <div class="d-flex gap-1 flex-wrap">
-      <a href="/admin/bookings" class="btn btn-sm <%= !status?'btn-primary':'btn-outline-secondary' %>">All</a>
-      <a href="/admin/bookings?status=pending" class="btn btn-sm <%= status==='pending'?'btn-warning':'btn-outline-warning' %>">⏳ Pending</a>
-      <a href="/admin/bookings?status=accepted" class="btn btn-sm <%= status==='accepted'?'btn-info':'btn-outline-info' %>">✅ Accepted</a>
-      <a href="/admin/bookings?status=in_progress" class="btn btn-sm <%= status==='in_progress'?'btn-primary':'btn-outline-primary' %>">🔄 In Progress</a>
-      <a href="/admin/bookings?status=completed" class="btn btn-sm <%= status==='completed'?'btn-success':'btn-outline-success' %>">🎉 Completed</a>
-      <a href="/admin/bookings?status=cancelled" class="btn btn-sm <%= status==='cancelled'?'btn-danger':'btn-outline-danger' %>">❌ Cancelled</a>
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1 fw-bold text-dark">
+          <i class="bi bi-calendar-check me-2 text-primary"></i>Bookings Management
+        </h5>
+        <p class="text-muted small mb-0">Total: <span class="badge bg-primary"><%= total %></span> bookings</p>
+      </div>
+      <div class="btn-group" role="group">
+        <a href="/admin/bookings" class="btn btn-sm <%= !status?'btn-primary':'btn-outline-secondary' %>">All</a>
+        <a href="/admin/bookings?status=pending" class="btn btn-sm <%= status==='pending'?'btn-warning':'btn-outline-warning' %>">
+          <i class="bi bi-clock-history me-1"></i>Pending
+        </a>
+        <a href="/admin/bookings?status=accepted" class="btn btn-sm <%= status==='accepted'?'btn-info':'btn-outline-info' %>">
+          <i class="bi bi-check-circle me-1"></i>Accepted
+        </a>
+        <a href="/admin/bookings?status=in_progress" class="btn btn-sm <%= status==='in_progress'?'btn-primary':'btn-outline-primary' %>">
+          <i class="bi bi-arrow-repeat me-1"></i>In Progress
+        </a>
+        <a href="/admin/bookings?status=completed" class="btn btn-sm <%= status==='completed'?'btn-success':'btn-outline-success' %>">
+          <i class="bi bi-check-circle-fill me-1"></i>Completed
+        </a>
+        <a href="/admin/bookings?status=cancelled" class="btn btn-sm <%= status==='cancelled'?'btn-danger':'btn-outline-danger' %>">
+          <i class="bi bi-x-circle me-1"></i>Cancelled
+        </a>
+      </div>
     </div>
   </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>#ID</th><th>User</th><th>Vendor</th><th>Service</th><th>Date</th><th>Amount</th><th>Commission</th><th>Status</th><th>Payment</th></tr></thead>
+      <thead class="table-light">
+        <tr><th>Booking ID</th><th>Customer</th><th>Vendor</th><th>Service</th><th>Date</th><th>Amount</th><th>Commission</th><th>Status</th><th>Payment</th></tr>
+      </thead>
       <tbody>
       <% bookings.forEach(b => { %>
         <tr>
-          <td class="text-muted small">#<%= b.id %></td>
-          <td><%= b.User?.name||'—' %><br><small class="text-muted">📱 <%= b.User?.mobile %></small></td>
-          <td>🏪 <%= b.Vendor?.business_name||'—' %></td>
-          <td>🔧 <%= b.Service?.name||'—' %></td>
-          <td class="small"><%= formatDate(b.booking_date) %></td>
+          <td class="text-muted small fw-medium">#<%= b.id %></td>
           <td>
-            <div class="fw-semibold">₹<%= parseFloat(b.total_amount||0).toFixed(0) %></div>
+            <div class="d-flex align-items-center gap-2">
+              <div class="bg-primary bg-opacity-10 rounded-circle p-2">
+                <i class="bi bi-person-fill text-primary" style="font-size:12px;"></i>
+              </div>
+              <div>
+                <div class="fw-medium"><%= b.User?.name||'—' %></div>
+                <small class="text-muted"><i class="bi bi-phone me-1"></i><%= b.User?.mobile %></small>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-1">
+              <i class="bi bi-shop text-muted" style="font-size:12px;"></i>
+              <span class="fw-medium"><%= b.Vendor?.business_name||'—' %></span>
+            </div>
+          </td>
+          <td>
+            <div class="d-flex align-items-center gap-1">
+              <i class="bi bi-tools text-muted" style="font-size:12px;"></i>
+              <span><%= b.Service?.name||'—' %></span>
+            </div>
+          </td>
+          <td class="small text-muted">
+            <i class="bi bi-calendar3 me-1"></i><%= formatDate(b.booking_date) %>
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">₹<%= parseFloat(b.total_amount||0).toFixed(0) %></div>
             <small class="text-muted">Base: ₹<%= parseFloat(b.amount||0).toFixed(0) %></small>
           </td>
           <td>
@@ -34,17 +80,35 @@
             <small class="text-muted"><%= b.commission_percent_applied||0 %>%</small>
           </td>
           <td>
-            <% const sc={pending:'warning',accepted:'info',in_progress:'primary',completed:'success',cancelled:'danger'};
-               const se={pending:'⏳',accepted:'✅',in_progress:'🔄',completed:'🎉',cancelled:'❌'}; %>
-            <span class="badge bg-<%= sc[b.status]||'secondary' %>"><%= se[b.status] %> <%= b.status %></span>
+            <% const sc={pending:'warning',accepted:'info',in_progress:'primary',completed:'success',cancelled:'danger'}; %>
+            <span class="badge bg-<%= sc[b.status]||'secondary' %> rounded-pill">
+              <% if(b.status === 'pending'){ %><i class="bi bi-clock-history me-1" style="font-size:10px;"></i>
+              <% } else if(b.status === 'accepted'){ %><i class="bi bi-check-circle me-1" style="font-size:10px;"></i>
+              <% } else if(b.status === 'in_progress'){ %><i class="bi bi-arrow-repeat me-1" style="font-size:10px;"></i>
+              <% } else if(b.status === 'completed'){ %><i class="bi bi-check-circle-fill me-1" style="font-size:10px;"></i>
+              <% } else if(b.status === 'cancelled'){ %><i class="bi bi-x-circle me-1" style="font-size:10px;"></i><% } %>
+              <%= b.status %>
+            </span>
           </td>
           <td>
             <% const pc={pending:'secondary',paid:'success',refunded:'warning'}; %>
-            <span class="badge bg-<%= pc[b.payment_status]||'secondary' %>"><%= b.payment_status %></span>
+            <span class="badge bg-<%= pc[b.payment_status]||'secondary' %> rounded-pill"><%= b.payment_status %></span>
           </td>
         </tr>
       <% }) %>
-      <% if(!bookings.length){ %><tr><td colspan="9" class="text-center text-muted py-4">No bookings found</td></tr><% } %>
+      <% if(!bookings.length){ %>
+        <tr>
+          <td colspan="9" class="text-center py-5">
+            <div class="text-muted">
+              <i class="bi bi-calendar-check" style="font-size:2rem;"></i>
+              <p class="mt-2 mb-0">No bookings found</p>
+              <% if(status){ %>
+                <small>No bookings with status: <%= status %></small>
+              <% } %>
+            </div>
+          </td>
+        </tr>
+      <% } %>
       </tbody>
     </table>
   </div>

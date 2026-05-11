@@ -28,4 +28,10 @@ router.post('/policies', adminCtrl.createPolicy);
 router.put('/policies/:id', adminCtrl.updatePolicy);
 router.delete('/policies/:id', adminCtrl.deletePolicy);
 
+// Zones (Polygon-based)
+router.get('/zones', adminCtrl.getZones);
+router.post('/zones', adminCtrl.createZone);
+router.put('/zones/:id', adminCtrl.updateZone);
+router.delete('/zones/:id', adminCtrl.deleteZone);
+
 module.exports = router;

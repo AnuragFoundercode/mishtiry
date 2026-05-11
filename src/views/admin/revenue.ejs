@@ -3,27 +3,47 @@
 <!-- Revenue Cards -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-lg-3">
-    <div class="stat-card" style="background:linear-gradient(135deg,#10b981,#059669)">
-      <p>💰 Total Revenue</p><h3>₹<%= parseFloat(totalRevenue).toFixed(0) %></h3>
-      <i class="bi bi-currency-rupee icon"></i>
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#10b981,#059669)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Total Revenue</p>
+          <h3 class="text-white mb-0 fw-bold">₹<%= parseFloat(totalRevenue).toFixed(0) %></h3>
+        </div>
+        <i class="bi bi-graph-up-arrow text-white-50" style="font-size:2rem;"></i>
+      </div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card" style="background:linear-gradient(135deg,#6c47ff,#a855f7)">
-      <p>💸 Commission</p><h3>₹<%= parseFloat(totalCommission).toFixed(0) %></h3>
-      <i class="bi bi-percent icon"></i>
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#6c47ff,#a855f7)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Commission</p>
+          <h3 class="text-white mb-0 fw-bold">₹<%= parseFloat(totalCommission).toFixed(0) %></h3>
+        </div>
+        <i class="bi bi-percent text-white-50" style="font-size:2rem;"></i>
+      </div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
-      <p>🏷️ Platform Charges</p><h3>₹<%= parseFloat(totalPlatformCharge).toFixed(0) %></h3>
-      <i class="bi bi-tag-fill icon"></i>
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Platform Charges</p>
+          <h3 class="text-white mb-0 fw-bold">₹<%= parseFloat(totalPlatformCharge).toFixed(0) %></h3>
+        </div>
+        <i class="bi bi-credit-card text-white-50" style="font-size:2rem;"></i>
+      </div>
     </div>
   </div>
   <div class="col-6 col-lg-3">
-    <div class="stat-card" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
-      <p>🧾 GST Collected</p><h3>₹<%= parseFloat(totalGst).toFixed(0) %></h3>
-      <i class="bi bi-receipt icon"></i>
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">GST Collected</p>
+          <h3 class="text-white mb-0 fw-bold">₹<%= parseFloat(totalGst).toFixed(0) %></h3>
+        </div>
+        <i class="bi bi-receipt text-white-50" style="font-size:2rem;"></i>
+      </div>
     </div>
   </div>
 </div>
@@ -31,14 +51,23 @@
 <div class="row g-3 mb-4">
   <!-- Revenue by Model -->
   <div class="col-lg-5">
-    <div class="card h-100">
-      <div class="card-header">📊 Revenue by Model</div>
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-bar-chart me-2 text-primary"></i>Revenue by Model
+        </h6>
+      </div>
       <div class="card-body">
         <% if(byModel.length){ byModel.forEach(m => { %>
           <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-              <% const icons={commission:'💸',subscription:'📦',hybrid:'🔀'}; %>
-              <span class="fw-semibold"><%= icons[m.revenue_model_applied]||'📋' %> <%= m.revenue_model_applied||'Unknown' %></span>
+              <span class="fw-semibold text-dark">
+                <% if(m.revenue_model_applied === 'commission'){ %><i class="bi bi-percent text-primary me-1"></i>
+                <% } else if(m.revenue_model_applied === 'subscription'){ %><i class="bi bi-star text-warning me-1"></i>
+                <% } else if(m.revenue_model_applied === 'hybrid'){ %><i class="bi bi-shuffle text-info me-1"></i>
+                <% } else { %><i class="bi bi-question-circle text-muted me-1"></i><% } %>
+                <%= m.revenue_model_applied||'Unknown' %>
+              </span>
               <br><small class="text-muted"><%= m.count %> bookings</small>
             </div>
             <div class="text-end">
@@ -50,7 +79,10 @@
             <div class="progress-bar bg-success" style="width:<%= totalCommission>0?(m.total/totalCommission*100).toFixed(0):0 %>%"></div>
           </div>
         <% }) } else { %>
-          <p class="text-muted text-center py-4">No paid bookings yet</p>
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-bar-chart" style="font-size:2rem;"></i>
+            <p class="mt-2 mb-0">No paid bookings yet</p>
+          </div>
         <% } %>
       </div>
     </div>
@@ -58,38 +90,50 @@
 
   <!-- Platform Settings Summary -->
   <div class="col-lg-7">
-    <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>⚙️ Current Platform Config</span>
-        <a href="/admin/settings" class="btn btn-sm btn-outline-primary">Edit</a>
+    <div class="card h-100 border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-gear me-2 text-primary"></i>Current Platform Config
+        </h6>
+        <a href="/admin/settings" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-pencil me-1"></i>Edit
+        </a>
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-6">
-            <div class="p-3 rounded-3" style="background:#f8f8ff">
-              <div style="font-size:1.5rem">🏷️</div>
-              <h5 class="mb-0 fw-bold mt-1"><%= settings.platform_charge_percent %>%</h5>
+            <div class="p-3 rounded-3 bg-primary bg-opacity-10">
+              <div class="mb-2">
+                <i class="bi bi-credit-card text-primary" style="font-size:1.5rem;"></i>
+              </div>
+              <h5 class="mb-0 fw-bold text-dark"><%= settings.platform_charge_percent %>%</h5>
               <small class="text-muted">Platform Charge</small>
             </div>
           </div>
           <div class="col-6">
-            <div class="p-3 rounded-3" style="background:#f8fff8">
-              <div style="font-size:1.5rem">🧾</div>
-              <h5 class="mb-0 fw-bold mt-1"><%= settings.gst_percent %>%</h5>
+            <div class="p-3 rounded-3 bg-success bg-opacity-10">
+              <div class="mb-2">
+                <i class="bi bi-receipt text-success" style="font-size:1.5rem;"></i>
+              </div>
+              <h5 class="mb-0 fw-bold text-dark"><%= settings.gst_percent %>%</h5>
               <small class="text-muted">GST on Platform Charge</small>
             </div>
           </div>
           <div class="col-6">
-            <div class="p-3 rounded-3" style="background:#fff8f0">
-              <div style="font-size:1.5rem">💸</div>
-              <h5 class="mb-0 fw-bold mt-1"><%= settings.default_commission_percent %>%</h5>
+            <div class="p-3 rounded-3 bg-warning bg-opacity-10">
+              <div class="mb-2">
+                <i class="bi bi-percent text-warning" style="font-size:1.5rem;"></i>
+              </div>
+              <h5 class="mb-0 fw-bold text-dark"><%= settings.default_commission_percent %>%</h5>
               <small class="text-muted">Default Commission</small>
             </div>
           </div>
           <div class="col-6">
-            <div class="p-3 rounded-3" style="background:#f0f8ff">
-              <div style="font-size:1.5rem">🔀</div>
-              <h5 class="mb-0 fw-bold mt-1 text-capitalize"><%= settings.default_revenue_model %></h5>
+            <div class="p-3 rounded-3 bg-info bg-opacity-10">
+              <div class="mb-2">
+                <i class="bi bi-shuffle text-info" style="font-size:1.5rem;"></i>
+              </div>
+              <h5 class="mb-0 fw-bold text-dark text-capitalize"><%= settings.default_revenue_model %></h5>
               <small class="text-muted">Default Revenue Model</small>
             </div>
           </div>
@@ -100,27 +144,42 @@
 </div>
 
 <!-- Recent Paid Bookings -->
-<div class="card">
-  <div class="card-header">💳 Recent Paid Bookings</div>
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <h6 class="mb-0 fw-semibold text-dark">
+      <i class="bi bi-credit-card me-2 text-primary"></i>Recent Paid Bookings
+    </h6>
+  </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>#ID</th><th>User</th><th>Vendor</th><th>Service</th><th>Base</th><th>Platform Fee</th><th>GST</th><th>Total</th><th>Commission</th><th>Vendor Gets</th></tr></thead>
+      <thead class="table-light">
+        <tr><th>Booking ID</th><th>Customer</th><th>Vendor</th><th>Service</th><th>Base Amount</th><th>Platform Fee</th><th>GST</th><th>Total Paid</th><th>Commission</th><th>Vendor Payout</th></tr>
+      </thead>
       <tbody>
       <% recentPaid.forEach(b => { %>
         <tr>
-          <td class="text-muted small">#<%= b.id %></td>
-          <td><%= b.User?.name||'—' %></td>
+          <td class="text-muted small fw-medium">#<%= b.id %></td>
+          <td class="fw-medium"><%= b.User?.name||'—' %></td>
           <td><%= b.Vendor?.business_name||'—' %></td>
           <td><%= b.Service?.name||'—' %></td>
-          <td>₹<%= parseFloat(b.amount||0).toFixed(0) %></td>
-          <td class="text-warning">₹<%= parseFloat(b.platform_charge||0).toFixed(0) %></td>
-          <td class="text-info">₹<%= parseFloat(b.gst_amount||0).toFixed(0) %></td>
-          <td class="fw-bold">₹<%= parseFloat(b.total_amount||0).toFixed(0) %></td>
-          <td class="text-success">₹<%= parseFloat(b.commission_amount||0).toFixed(0) %> (<%= b.commission_percent_applied||0 %>%)</td>
-          <td class="text-primary fw-semibold">₹<%= parseFloat(b.vendor_payout||0).toFixed(0) %></td>
+          <td class="fw-semibold">₹<%= parseFloat(b.amount||0).toFixed(0) %></td>
+          <td class="text-warning fw-semibold">₹<%= parseFloat(b.platform_charge||0).toFixed(0) %></td>
+          <td class="text-info fw-semibold">₹<%= parseFloat(b.gst_amount||0).toFixed(0) %></td>
+          <td class="fw-bold text-dark">₹<%= parseFloat(b.total_amount||0).toFixed(0) %></td>
+          <td class="text-success fw-semibold">₹<%= parseFloat(b.commission_amount||0).toFixed(0) %> (<%= b.commission_percent_applied||0 %>%)</td>
+          <td class="text-primary fw-bold">₹<%= parseFloat(b.vendor_payout||0).toFixed(0) %></td>
         </tr>
       <% }) %>
-      <% if(!recentPaid.length){ %><tr><td colspan="10" class="text-center text-muted py-4">No paid bookings yet</td></tr><% } %>
+      <% if(!recentPaid.length){ %>
+        <tr>
+          <td colspan="10" class="text-center py-5">
+            <div class="text-muted">
+              <i class="bi bi-credit-card" style="font-size:2rem;"></i>
+              <p class="mt-2 mb-0">No paid bookings yet</p>
+            </div>
+          </td>
+        </tr>
+      <% } %>
       </tbody>
     </table>
   </div>

@@ -547,8 +547,16 @@ const zones = async (req, res) => {
 
 const createZone = async (req, res) => {
   try {
-    const { name, center_lat, center_lng, radius_km, color, is_active } = req.body;
-    await Zone.create({ name, center_lat, center_lng, radius_km, color: color || '#6c47ff', is_active: is_active === '1' });
+    const { name, coordinates, color, is_active } = req.body;
+    let coords = coordinates;
+    if (typeof coordinates === 'string') {
+      coords = JSON.parse(coordinates);
+    }
+    if (!Array.isArray(coords) || coords.length < 3) {
+      req.flash('error', 'Zone must have at least 3 coordinates');
+      return res.redirect('/admin/zones');
+    }
+    await Zone.create({ name, coordinates: coords, color: color || '#6c47ff', is_active: is_active === '1' });
     req.flash('success', 'Zone created');
     res.redirect('/admin/zones');
   } catch (e) { req.flash('error', e.message); res.redirect('/admin/zones'); }
@@ -556,8 +564,16 @@ const createZone = async (req, res) => {
 
 const updateZone = async (req, res) => {
   try {
-    const { name, center_lat, center_lng, radius_km, color, is_active } = req.body;
-    await Zone.update({ name, center_lat, center_lng, radius_km, color, is_active: is_active === '1' }, { where: { id: req.params.id } });
+    const { name, coordinates, color, is_active } = req.body;
+    let coords = coordinates;
+    if (typeof coordinates === 'string') {
+      coords = JSON.parse(coordinates);
+    }
+    if (!Array.isArray(coords) || coords.length < 3) {
+      req.flash('error', 'Zone must have at least 3 coordinates');
+      return res.redirect('/admin/zones');
+    }
+    await Zone.update({ name, coordinates: coords, color, is_active: is_active === '1' }, { where: { id: req.params.id } });
     req.flash('success', 'Zone updated');
     res.redirect('/admin/zones');
   } catch (e) { req.flash('error', e.message); res.redirect('/admin/zones'); }
