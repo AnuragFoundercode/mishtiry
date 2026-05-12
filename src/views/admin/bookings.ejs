@@ -16,6 +16,15 @@
         </h5>
         <p class="text-muted small mb-0">Total: <span class="badge bg-primary"><%= total %></span> bookings</p>
       </div>
+      <form class="d-flex gap-2" method="GET" action="/admin/bookings">
+        <input type="hidden" name="status" value="<%= status %>">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="search" class="form-control border-start-0" placeholder="Booking ID, name or mobile" value="<%= search %>" style="width:220px">
+        </div>
+        <button class="btn btn-primary btn-sm"><i class="bi bi-search"></i></button>
+        <% if(search){ %><a href="/admin/bookings?status=<%= status %>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i></a><% } %>
+      </form>
       <div class="btn-group" role="group">
         <a href="/admin/bookings" class="btn btn-sm <%= !status?'btn-primary':'btn-outline-secondary' %>">All</a>
         <a href="/admin/bookings?status=pending" class="btn btn-sm <%= status==='pending'?'btn-warning':'btn-outline-warning' %>">
@@ -39,7 +48,7 @@
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead class="table-light">
-        <tr><th>Booking ID</th><th>Customer</th><th>Vendor</th><th>Service</th><th>Date</th><th>Amount</th><th>Commission</th><th>Status</th><th>Payment</th></tr>
+        <tr><th>Booking ID</th><th>Customer</th><th>Vendor</th><th>Service</th><th>Date</th><th>Amount</th><th>Commission</th><th>Status</th><th>Payment</th><th>Action</th></tr>
       </thead>
       <tbody>
       <% bookings.forEach(b => { %>
@@ -94,6 +103,11 @@
             <% const pc={pending:'secondary',paid:'success',refunded:'warning'}; %>
             <span class="badge bg-<%= pc[b.payment_status]||'secondary' %> rounded-pill"><%= b.payment_status %></span>
           </td>
+          <td>
+            <a href="/admin/bookings/<%= b.id %>" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye me-1"></i>View
+            </a>
+          </td>
         </tr>
       <% }) %>
       <% if(!bookings.length){ %>
@@ -117,7 +131,7 @@
     <small class="text-muted">Showing <%= (currentPage-1)*15+1 %>–<%= Math.min(currentPage*15,total) %> of <%= total %></small>
     <nav><ul class="pagination pagination-sm mb-0">
       <% for(let p=1;p<=pages;p++){ %>
-        <li class="page-item <%= p==currentPage?'active':'' %>"><a class="page-link" href="?page=<%= p %>&status=<%= status %>"><%= p %></a></li>
+        <li class="page-item <%= p==currentPage?'active':'' %>"><a class="page-link" href="?page=<%= p %>&status=<%= status %>&search=<%= search %>"><%= p %></a></li>
       <% } %>
     </ul></nav>
   </div>

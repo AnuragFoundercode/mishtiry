@@ -1,0 +1,247 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i><%= success %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<% } %>
+
+<style>
+  .user-hero {
+    background: linear-gradient(135deg, #6c47ff 0%, #a855f7 50%, #ec4899 100%);
+    border-radius: 18px;
+    padding: 32px 28px;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .user-hero::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 180px; height: 180px;
+    background: rgba(255,255,255,.08);
+    border-radius: 50%;
+  }
+  .user-hero::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; left: 30%;
+    width: 240px; height: 240px;
+    background: rgba(255,255,255,.05);
+    border-radius: 50%;
+  }
+  .avatar-ring {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    border: 3px solid rgba(255,255,255,.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; color: #fff;
+    flex-shrink: 0;
+    backdrop-filter: blur(4px);
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600;
+    backdrop-filter: blur(4px);
+  }
+  .hero-badge.active { background: rgba(16,185,129,.25); border: 1px solid rgba(16,185,129,.4); }
+  .hero-badge.blocked { background: rgba(239,68,68,.25); border: 1px solid rgba(239,68,68,.4); }
+
+  .stat-pill {
+    background: #fff;
+    border-radius: 16px;
+    padding: 18px 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.06);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .stat-pill .icon-wrap {
+    width: 46px; height: 46px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; flex-shrink: 0;
+  }
+  .stat-pill h4 { font-size: 1.4rem; font-weight: 800; margin: 0; line-height: 1; }
+  .stat-pill p { font-size: .75rem; color: #888; margin: 4px 0 0; }
+
+  .booking-row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f3f3f8;
+    transition: background .15s;
+  }
+  .booking-row:last-child { border-bottom: none; }
+  .booking-row:hover { background: #fafafe; }
+  .booking-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .95rem; flex-shrink: 0;
+  }
+
+  .review-card {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f3f3f8;
+  }
+  .review-card:last-child { border-bottom: none; }
+  .stars i { font-size: .8rem; }
+</style>
+
+<!-- Hero Banner -->
+<div class="user-hero">
+  <div class="d-flex align-items-center gap-4 position-relative" style="z-index:1;">
+    <div class="avatar-ring">
+      <%= (user.name || 'U')[0].toUpperCase() %>
+    </div>
+    <div class="flex-grow-1">
+      <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+        <h4 class="fw-bold mb-0 text-white"><%= user.name || 'No Name' %></h4>
+        <span class="hero-badge <%= user.is_blocked ? 'blocked' : 'active' %>">
+          <i class="bi bi-<%= user.is_blocked ? 'x-circle' : 'check-circle' %>-fill"></i>
+          <%= user.is_blocked ? 'Blocked' : 'Active' %>
+        </span>
+      </div>
+      <div class="d-flex flex-wrap gap-3 mt-1" style="opacity:.85;font-size:.85rem;">
+        <span><i class="bi bi-phone me-1"></i><%= user.mobile %></span>
+        <% if(user.email){ %><span><i class="bi bi-envelope me-1"></i><%= user.email %></span><% } %>
+        <span><i class="bi bi-calendar3 me-1"></i>Joined <%= formatDate(user.created_at || user.createdAt) %></span>
+      </div>
+    </div>
+    <div class="d-flex gap-2 flex-shrink-0">
+      <a href="/admin/users" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:10px;">
+        <i class="bi bi-arrow-left me-1"></i>Back
+      </a>
+      <form method="POST" action="/admin/users/<%= user.id %>/toggle-block" class="d-inline">
+        <button class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:10px;"
+          onclick="return confirm('<%= user.is_blocked ? 'Unblock' : 'Block' %> this user?')">
+          <i class="bi bi-<%= user.is_blocked ? 'check' : 'slash' %>-circle me-1"></i>
+          <%= user.is_blocked ? 'Unblock' : 'Block' %>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Stat Pills -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-pill">
+      <div class="icon-wrap" style="background:#ede9ff;"><i class="bi bi-calendar-check-fill text-primary"></i></div>
+      <div>
+        <h4 class="text-primary"><%= bookings.length %></h4>
+        <p>Total Bookings</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-pill">
+      <div class="icon-wrap" style="background:#ecfdf5;"><i class="bi bi-currency-rupee text-success"></i></div>
+      <div>
+        <h4 class="text-success">₹<%= totalSpend.toFixed(0) %></h4>
+        <p>Total Spent</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-pill">
+      <div class="icon-wrap" style="background:#fffbeb;"><i class="bi bi-patch-check-fill text-warning"></i></div>
+      <div>
+        <h4 class="text-warning"><%= bookings.filter(b=>b.status==='completed').length %></h4>
+        <p>Completed</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-pill">
+      <div class="icon-wrap" style="background:#eff6ff;"><i class="bi bi-star-fill text-info"></i></div>
+      <div>
+        <h4 class="text-info"><%= reviews.length %></h4>
+        <p>Reviews Given</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Booking History -->
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-clock-history me-2 text-primary"></i>Booking History</span>
+        <span class="badge bg-primary rounded-pill"><%= bookings.length %></span>
+      </div>
+      <% if(bookings.length){ %>
+        <% bookings.forEach(b => { %>
+          <% const sc={pending:'warning',accepted:'info',in_progress:'primary',completed:'success',cancelled:'danger'}; %>
+          <% const ic={pending:'clock-history',accepted:'check-circle',in_progress:'arrow-repeat',completed:'check-circle-fill',cancelled:'x-circle'}; %>
+          <% const bg={pending:'#fffbeb',accepted:'#eff6ff',in_progress:'#ede9ff',completed:'#ecfdf5',cancelled:'#fef2f2'}; %>
+          <div class="booking-row">
+            <div class="booking-icon" style="background:<%= bg[b.status]||'#f5f5f5' %>;">
+              <i class="bi bi-<%= ic[b.status]||'calendar' %> text-<%= sc[b.status]||'secondary' %>"></i>
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-semibold text-dark" style="font-size:.88rem;"><%= b.Service?.name || '—' %></div>
+              <div class="text-muted" style="font-size:.78rem;"><i class="bi bi-shop me-1"></i><%= b.Vendor?.business_name || '—' %></div>
+            </div>
+            <div class="text-end flex-shrink-0">
+              <div class="fw-bold text-dark" style="font-size:.88rem;">₹<%= parseFloat(b.total_amount||0).toFixed(0) %></div>
+              <div style="font-size:.72rem;" class="text-muted"><%= formatDate(b.booking_date) %></div>
+              <span class="badge bg-<%= sc[b.status]||'secondary' %> rounded-pill mt-1" style="font-size:.65rem;"><%= b.status %></span>
+            </div>
+            <a href="/admin/bookings/<%= b.id %>" class="btn btn-sm btn-light ms-2" style="border-radius:10px;padding:6px 10px;">
+              <i class="bi bi-eye text-primary"></i>
+            </a>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-calendar-x" style="font-size:2.5rem;opacity:.4;"></i>
+          <p class="mt-3 mb-0 fw-medium">No bookings yet</p>
+          <small>This user hasn't made any bookings</small>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Reviews -->
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="fw-semibold"><i class="bi bi-star-fill me-2 text-warning"></i>Reviews Given</span>
+        <span class="badge bg-warning text-dark rounded-pill"><%= reviews.length %></span>
+      </div>
+      <% if(reviews.length){ %>
+        <% reviews.forEach(r => { %>
+          <div class="review-card">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div class="fw-semibold text-dark" style="font-size:.88rem;"><%= r.Vendor?.business_name || '—' %></div>
+              <small class="text-muted flex-shrink-0 ms-2"><%= formatDate(r.created_at || r.createdAt) %></small>
+            </div>
+            <div class="stars mb-2">
+              <% for(let s=1;s<=5;s++){ %>
+                <i class="bi bi-star<%= s<=r.rating?'-fill':'' %> text-warning"></i>
+              <% } %>
+              <span class="text-muted ms-1" style="font-size:.78rem;"><%= r.rating %>.0</span>
+            </div>
+            <% if(r.review){ %>
+              <div class="bg-light rounded-3 px-3 py-2" style="font-size:.82rem;color:#555;font-style:italic;">
+                "<%= r.review %>"
+              </div>
+            <% } %>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-star" style="font-size:2.5rem;opacity:.4;"></i>
+          <p class="mt-3 mb-0 fw-medium">No reviews yet</p>
+          <small>This user hasn't reviewed any service</small>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+</div>
+
+<%- include('partials/footer') %>

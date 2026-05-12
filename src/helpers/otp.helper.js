@@ -1,14 +1,6 @@
-const twilio = require('twilio');
+const axios = require('axios');
 const nodemailer = require('nodemailer');
 require('dotenv').config();
-
-let twilioClient = null;
-const getClient = () => {
-  if (!twilioClient && process.env.TWILIO_ACCOUNT_SID?.startsWith('AC')) {
-    twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-  }
-  return twilioClient;
-};
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -21,14 +13,27 @@ const generateOTP = () => {
   return Math.floor(Math.pow(10, length - 1) + Math.random() * 9 * Math.pow(10, length - 1)).toString();
 };
 
-const sendSmsOtp = async (phone, otp) => {
-  const client = getClient();
-  if (!client) { console.warn('Twilio not configured, OTP:', otp); return; }
-  await client.messages.create({
-    body: `Your Mistry OTP is: ${otp}. Valid for ${process.env.OTP_EXPIRES_IN / 60} minutes.`,
-    from: process.env.TWILIO_PHONE_NUMBER,
-    to: phone,
-  });
+const sendSmsOtp = async (phone) => {
+  try {
+    const url = `${process.env.INDOPAY_BASE_URL}/newsend_otp.php`;
+    const params = {
+      merchant_key: process.env.INDOPAY_MERCHANT_KEY,
+      mobile_no: phone.replace(/^\+91/, ''),
+      digit: process.env.OTP_LENGTH || 6
+    };
+    
+    const response = await axios.get(url, { params });
+    
+    if (response.data.status === 'success') {
+      console.log('OTP sent successfully via IndoPay');
+      return response.data; // Returns { status, msg, otp, remaining, mode }
+    } else {
+      throw new Error(response.data.msg || 'Failed to send OTP');
+    }
+  } catch (error) {
+    console.error('IndoPay OTP Error:', error.message);
+    throw error;
+  }
 };
 
 const sendEmailOtp = async (email, otp) => {

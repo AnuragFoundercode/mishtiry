@@ -97,10 +97,52 @@ const dashboard = async (req, res) => {
       limit: 5, order: [['created_at', 'DESC']],
       include: [{ model: User, attributes: ['name', 'mobile'] }],
     });
+
+    // Chart 1: last 6 months booking trend
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+    const monthlyRaw = await Booking.findAll({
+      attributes: [
+        [sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m'), 'month'],
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+        [sequelize.fn('SUM', sequelize.col('total_amount')), 'revenue'],
+      ],
+      where: { created_at: { [Op.gte]: sixMonthsAgo } },
+      group: [sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m')],
+      order: [[sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m'), 'ASC']],
+      raw: true,
+    });
+    // Fill missing months
+    const monthLabels = [];
+    const monthCounts = [];
+    const monthRevenue = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('en-IN', { month: 'short', year: '2-digit' });
+      const found = monthlyRaw.find(r => r.month === key);
+      monthLabels.push(label);
+      monthCounts.push(found ? parseInt(found.count) : 0);
+      monthRevenue.push(found ? parseFloat(found.revenue || 0).toFixed(0) : 0);
+    }
+
+    // Chart 2: booking status breakdown
+    const statusRaw = await Booking.findAll({
+      attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      group: ['status'], raw: true,
+    });
+    const statusLabels = statusRaw.map(s => s.status);
+    const statusCounts = statusRaw.map(s => parseInt(s.count));
+
     res.render('admin/dashboard', {
       title: 'Dashboard', page: 'dashboard',
       totalUsers, totalVendors, totalBookings, pendingKyc, pendingBookings,
       totalRevenue, platformRevenue, gstCollected, recentBookings, recentVendors,
+      monthLabels, monthCounts, monthRevenue,
+      statusLabels, statusCounts,
       adminName: req.session.adminName,
     });
   } catch (e) { res.render('admin/error', { message: e.message }); }
@@ -123,6 +165,34 @@ const toggleBlockUser = async (req, res) => {
   if (user) await user.update({ is_blocked: !user.is_blocked });
   req.flash('success', `User ${user.is_blocked ? 'blocked' : 'unblocked'}`);
   res.redirect('/admin/users');
+};
+
+const userDetail = async (req, res) => {
+  try {
+    const Review = require('../../models/review.model');
+    const user = await User.findOne({ where: { id: req.params.id, role: 'user' } });
+    if (!user) { req.flash('error', 'User not found'); return res.redirect('/admin/users'); }
+    const bookings = await Booking.findAll({
+      where: { user_id: user.id },
+      order: [['created_at', 'DESC']],
+      include: [
+        { model: Vendor, attributes: ['business_name'] },
+        { model: Service, attributes: ['name'] },
+      ],
+    });
+    const reviews = await Review.findAll({
+      where: { user_id: user.id },
+      order: [['created_at', 'DESC']],
+      include: [{ model: Vendor, attributes: ['business_name'] }],
+    });
+    const totalSpend = bookings.filter(b => b.payment_status === 'paid').reduce((s, b) => s + parseFloat(b.total_amount || 0), 0);
+    res.render('admin/user-detail', {
+      title: user.name || 'User Detail', page: 'users',
+      user, bookings, reviews, totalSpend,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
 // ─── Vendors ──────────────────────────────────────────────────────────────────
@@ -388,20 +458,68 @@ const toggleService = async (req, res) => {
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 
+const bookingDetail = async (req, res) => {
+  try {
+    const Message = require('../../models/message.model');
+    const booking = await Booking.findByPk(req.params.id, {
+      include: [
+        { model: User, attributes: ['name', 'mobile', 'email'] },
+        { model: Vendor, attributes: ['business_name', 'address'] },
+        { model: Service, attributes: ['name', 'description', 'estimated_time'] },
+      ],
+    });
+    if (!booking) { req.flash('error', 'Booking not found'); return res.redirect('/admin/bookings'); }
+    const messages = await Message.findAll({
+      where: { booking_id: booking.id },
+      order: [['created_at', 'ASC']],
+    });
+    // Attach sender names
+    const userIds = [...new Set(messages.map(m => m.sender_id))];
+    const senders = await User.findAll({ where: { id: userIds }, attributes: ['id', 'name', 'role'] });
+    const senderMap = {};
+    senders.forEach(s => { senderMap[s.id] = s; });
+    res.render('admin/booking-detail', {
+      title: `Booking #${booking.id}`, page: 'bookings',
+      booking, messages, senderMap,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
+
+const updateBookingStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const allowed = ['pending', 'accepted', 'in_progress', 'completed', 'cancelled'];
+    if (!allowed.includes(status)) { req.flash('error', 'Invalid status'); return res.redirect(`/admin/bookings/${req.params.id}`); }
+    const booking = await Booking.findByPk(req.params.id);
+    if (!booking) { req.flash('error', 'Booking not found'); return res.redirect('/admin/bookings'); }
+    await booking.update({ status });
+    req.flash('success', `Booking status updated to "${status}"`);
+    res.redirect(`/admin/bookings/${req.params.id}`);
+  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/bookings/${req.params.id}`); }
+};
+
 const bookings = async (req, res) => {
   try {
-    const { status = '', page = 1 } = req.query;
+    const { status = '', search = '', page = 1 } = req.query;
     const limit = 15, offset = (page - 1) * limit;
     const where = status ? { status } : {};
+    if (search && /^\d+$/.test(search.trim())) {
+      where.id = search.trim();
+    }
+    const userWhere = search && !/^\d+$/.test(search.trim())
+      ? { [Op.or]: [{ name: { [Op.like]: `%${search}%` } }, { mobile: { [Op.like]: `%${search}%` } }] }
+      : undefined;
     const { count, rows } = await Booking.findAndCountAll({
       where, limit, offset, order: [['created_at', 'DESC']],
       include: [
-        { model: User, attributes: ['name', 'mobile'] },
+        { model: User, attributes: ['name', 'mobile'], ...(userWhere && { where: userWhere, required: true }) },
         { model: Vendor, attributes: ['business_name'] },
         { model: Service, attributes: ['name'] },
       ],
     });
-    res.render('admin/bookings', { title: 'Bookings', page: 'bookings', bookings: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), status, adminName: req.session.adminName, success: req.flash('success') });
+    res.render('admin/bookings', { title: 'Bookings', page: 'bookings', bookings: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), status, search, adminName: req.session.adminName, success: req.flash('success') });
   } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
@@ -591,14 +709,14 @@ module.exports = {
   showLogin, doLogin, doLogout,
   showForgotPassword, doForgotPassword, showResetPassword, doResetPassword,
   dashboard,
-  users, toggleBlockUser,
+  users, toggleBlockUser, userDetail,
   vendors, createVendor, updateVendorProfile,
   vendorDetail, updateVendorKyc, updateVendorPricing, toggleSuspendVendor, toggleFeaturedVendor,
   assignVendorSubscription, cancelVendorSubscription,
   subscriptionPlans, createPlan, updatePlan, togglePlan,
   categories, createCategory, updateCategory, deleteCategory,
   services, toggleService,
-  bookings,
+  bookings, bookingDetail, updateBookingStatus,
   revenue,
   platformSettings, updatePlatformSettings,
   notifications, sendNotification,

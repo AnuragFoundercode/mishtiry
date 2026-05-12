@@ -8,12 +8,16 @@ require('dotenv').config();
 
 // ─── Internal helper ──────────────────────────────────────────────────────────
 const createAndSendOtp = async (mobile) => {
-  const otp = generateOTP();
   const expires_at = new Date(Date.now() + parseInt(process.env.OTP_EXPIRES_IN || 300) * 1000);
   await Otp.destroy({ where: { mobile } });
-  await Otp.create({ mobile, otp, expires_at });
-  await sendSmsOtp(mobile, otp);
-  return otp;
+  
+  // Send OTP via IndoPay and get the actual OTP from response
+  const otpResponse = await sendSmsOtp(mobile);
+  const actualOtp = otpResponse.otp; // IndoPay returns the actual OTP
+  
+  // Store the actual OTP that was sent to user
+  await Otp.create({ mobile, otp: actualOtp, expires_at });
+  return actualOtp;
 };
 
 const verifyOtpRecord = async (mobile, otp) => {

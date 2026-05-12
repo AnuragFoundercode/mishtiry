@@ -92,6 +92,10 @@
             <% } %>
           </td>
           <td>
+            <div class="d-flex gap-2">
+            <a href="/admin/users/<%= u.id %>" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-eye me-1"></i>View
+            </a>
             <form method="POST" action="/admin/users/<%= u.id %>/toggle-block" class="d-inline">
               <button class="btn btn-sm <%= u.is_blocked ? 'btn-success' : 'btn-danger' %>" onclick="return confirm('<%= u.is_blocked ? 'Unblock' : 'Block' %> this user?')">
                 <% if(u.is_blocked){ %>
@@ -101,6 +105,7 @@
                 <% } %>
               </button>
             </form>
+            </div>
           </td>
         </tr>
       <% }) %>

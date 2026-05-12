@@ -21,6 +21,7 @@ router.get('/dashboard', guard, ctrl.dashboard);
 
 // Users
 router.get('/users', guard, ctrl.users);
+router.get('/users/:id', guard, ctrl.userDetail);
 router.post('/users/:id/toggle-block', guard, ctrl.toggleBlockUser);
 
 // Vendors
@@ -53,6 +54,8 @@ router.post('/services/:id/toggle', guard, ctrl.toggleService);
 
 // Bookings
 router.get('/bookings', guard, ctrl.bookings);
+router.get('/bookings/:id', guard, ctrl.bookingDetail);
+router.post('/bookings/:id/update-status', guard, ctrl.updateBookingStatus);
 
 // Revenue
 router.get('/revenue', guard, ctrl.revenue);
