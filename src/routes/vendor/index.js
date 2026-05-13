@@ -3,8 +3,12 @@ const authCtrl = require('../../controllers/user/auth.controller');
 const onboardingCtrl = require('../../controllers/vendor/onboarding.controller');
 const serviceCtrl = require('../../controllers/vendor/service.controller');
 const bookingCtrl = require('../../controllers/vendor/booking.controller');
+const sliderCtrl = require('../../controllers/admin/slider.controller');
 const { authenticate, authorize, requireApprovedVendor } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
+
+// ─── Sliders ──────────────────────────────────────────────────────────────────
+router.get('/sliders', authenticate, authorize('vendor'), sliderCtrl.getSliders);
 
 // ─── Auth (Vendor-specific) ──────────────────────────────────────────────────
 router.post('/auth/send-otp', authCtrl.vendorSendOtp);

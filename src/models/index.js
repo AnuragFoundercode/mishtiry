@@ -10,7 +10,12 @@ const Notification = require('./notification.model');
 const Message = require('./message.model');
 const Policy = require('./policy.model');
 const Zone = require('./zone.model');
+const Slider = require('./slider.model');
 const { SubscriptionPlan, VendorSubscription } = require('./subscription.model');
+
+// Category self-join (parent -> subcategories)
+Category.hasMany(Category, { as: 'subcategories', foreignKey: 'parent_id' });
+Category.belongsTo(Category, { as: 'parent', foreignKey: 'parent_id' });
 
 // User <-> Vendor
 User.hasOne(Vendor, { foreignKey: 'user_id' });
@@ -64,5 +69,5 @@ Booking.belongsTo(Zone, { foreignKey: 'zone_id' });
 module.exports = {
   User, Vendor, VendorKyc, VendorBankDetail,
   Service, Category, Booking, Review,
-  Notification, Message, SubscriptionPlan, VendorSubscription, Policy, Zone,
+  Notification, Message, SubscriptionPlan, VendorSubscription, Policy, Zone, Slider,
 };

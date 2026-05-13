@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const ctrl = require('../../controllers/admin/web.controller');
+const sliderCtrl = require('../../controllers/admin/slider.controller');
 const upload = require('../../middlewares/upload.middleware');
 
 const guard = (req, res, next) => {
@@ -8,7 +9,10 @@ const guard = (req, res, next) => {
 };
 
 // Auth
-router.get('/login', ctrl.showLogin);
+router.get('/login', (req, res, next) => {
+  if (req.session.adminId) return res.redirect('/admin/dashboard');
+  next();
+}, ctrl.showLogin);
 router.post('/login', ctrl.doLogin);
 router.get('/logout', ctrl.doLogout);
 router.get('/forgot-password', ctrl.showForgotPassword);
@@ -80,5 +84,11 @@ router.get('/zones', guard, ctrl.zones);
 router.post('/zones', guard, ctrl.createZone);
 router.post('/zones/:id/update', guard, ctrl.updateZone);
 router.post('/zones/:id/delete', guard, ctrl.deleteZone);
+
+// Sliders
+router.get('/sliders', guard, sliderCtrl.sliders);
+router.post('/sliders', guard, upload.single('image'), sliderCtrl.createSlider);
+router.post('/sliders/:id/update', guard, upload.single('image'), sliderCtrl.updateSlider);
+router.post('/sliders/:id/delete', guard, sliderCtrl.deleteSlider);
 
 module.exports = router;
