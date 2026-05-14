@@ -45,6 +45,7 @@ router.get('/subscriptions', guard, ctrl.subscriptionPlans);
 router.post('/subscriptions', guard, ctrl.createPlan);
 router.post('/subscriptions/:id/update', guard, ctrl.updatePlan);
 router.post('/subscriptions/:id/toggle', guard, ctrl.togglePlan);
+router.post('/subscriptions/notify-renewal', guard, ctrl.sendRenewalNotification);
 
 // Categories
 router.get('/categories', guard, ctrl.categories);
@@ -54,6 +55,7 @@ router.post('/categories/:id/delete', guard, ctrl.deleteCategory);
 
 // Services
 router.get('/services', guard, ctrl.services);
+router.get('/services/:id', guard, ctrl.serviceDetail);
 router.post('/services/:id/toggle', guard, ctrl.toggleService);
 
 // Bookings

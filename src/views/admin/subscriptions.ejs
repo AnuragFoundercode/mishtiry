@@ -1,46 +1,95 @@
 <%- include('partials/header') %>
 
 <% if(success&&success.length){ %>
-  <div class="alert alert-success alert-dismissible fade show" role="alert">
+  <div class="alert alert-success alert-dismissible fade show">
     <i class="bi bi-check-circle-fill me-2"></i><%= success %>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
 <% } %>
 <% if(error&&error.length){ %>
-  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+  <div class="alert alert-danger alert-dismissible fade show">
     <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
 <% } %>
 
-<div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3 mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <h4 class="mb-1 fw-bold text-dark">
-      <i class="bi bi-star me-2 text-primary"></i>Subscription Plans
-    </h4>
-    <p class="text-muted small mb-0"><%= activeSubs %> active subscriptions across all vendors</p>
+    <h4 class="mb-1 fw-bold text-dark"><i class="bi bi-star me-2 text-primary"></i>Subscription Plans</h4>
+    <p class="text-muted small mb-0">Manage plans and track vendor subscriptions</p>
   </div>
   <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPlanModal">
     <i class="bi bi-plus-lg me-1"></i>Add Plan
   </button>
 </div>
 
+<!-- Overall Stats -->
 <div class="row g-3 mb-4">
-<% plans.forEach(plan => { %>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#10b981,#059669)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Active</p>
+          <h3 class="text-white mb-0 fw-bold"><%= activeSubs %></h3>
+        </div>
+        <i class="bi bi-check-circle text-white-50" style="font-size:2rem;"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Expiring Soon</p>
+          <h3 class="text-white mb-0 fw-bold"><%= expiringSoon.length %></h3>
+        </div>
+        <i class="bi bi-clock-history text-white-50" style="font-size:2rem;"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Expired</p>
+          <h3 class="text-white mb-0 fw-bold"><%= expiredSubs %></h3>
+        </div>
+        <i class="bi bi-x-circle text-white-50" style="font-size:2rem;"></i>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card border-0 shadow-sm" style="background:linear-gradient(135deg,#6c47ff,#a855f7)">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <p class="text-white-50 mb-1 small fw-medium">Cancelled</p>
+          <h3 class="text-white mb-0 fw-bold"><%= cancelledSubs %></h3>
+        </div>
+        <i class="bi bi-slash-circle text-white-50" style="font-size:2rem;"></i>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Plans with Stats -->
+<div class="row g-3 mb-4">
+<% plans.forEach(plan => {
+  const stats = planStats.filter(s => s.plan_id === plan.id);
+  const activeCount = stats.find(s => s.status === 'active')?.count || 0;
+  const totalCount  = stats.reduce((sum, s) => sum + parseInt(s.count), 0);
+%>
   <div class="col-12 col-sm-6 col-lg-4">
-    <div class="card h-100 border-0 shadow-sm <%= !plan.is_active ? 'opacity-50' : '' %>">
+    <div class="card h-100 border-0 shadow-sm <%= !plan.is_active ? 'opacity-60' : '' %>">
       <div class="card-body p-4">
         <div class="d-flex justify-content-between align-items-start mb-3">
           <div>
-            <h5 class="fw-bold mb-2 text-dark">
-              <% if(plan.name === 'basic'){ %><i class="bi bi-award text-warning me-2"></i>
-              <% } else if(plan.name === 'pro'){ %><i class="bi bi-gem text-info me-2"></i>
-              <% } else if(plan.name === 'advanced'){ %><i class="bi bi-trophy text-success me-2"></i>
-              <% } else { %><i class="bi bi-box text-muted me-2"></i><% } %>
-              <%= (plan.name||'').charAt(0).toUpperCase()+(plan.name||'').slice(1) %>
+            <h5 class="fw-bold mb-1 text-dark">
+              <% if(plan.name==='basic'){ %><i class="bi bi-award text-warning me-2"></i>
+              <% } else if(plan.name==='pro'){ %><i class="bi bi-gem text-info me-2"></i>
+              <% } else { %><i class="bi bi-trophy text-success me-2"></i><% } %>
+              <%= plan.name.charAt(0).toUpperCase()+plan.name.slice(1) %>
             </h5>
             <span class="badge <%= plan.is_active ? 'bg-success' : 'bg-secondary' %> rounded-pill">
-              <i class="bi <%= plan.is_active ? 'bi-check-circle' : 'bi-pause-circle' %> me-1" style="font-size:10px;"></i>
               <%= plan.is_active ? 'Active' : 'Inactive' %>
             </span>
           </div>
@@ -49,30 +98,48 @@
             <small class="text-muted">₹<%= plan.price_yearly %>/yr</small>
           </div>
         </div>
+
+        <!-- Subscription counts -->
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <div class="bg-success bg-opacity-10 rounded-3 p-2 text-center">
+              <div class="fw-bold text-success fs-5"><%= activeCount %></div>
+              <small class="text-muted">Active Now</small>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="bg-primary bg-opacity-10 rounded-3 p-2 text-center">
+              <div class="fw-bold text-primary fs-5"><%= totalCount %></div>
+              <small class="text-muted">Total Ever</small>
+            </div>
+          </div>
+        </div>
+
         <ul class="list-unstyled small mb-4">
-          <li class="mb-2 d-flex align-items-center">
-            <i class="bi bi-list-check text-primary me-2"></i>
-            <span>Services: <strong><%= plan.service_limit >= 2147483647 ? 'Unlimited' : plan.service_limit %></strong></span>
+          <li class="mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-list-check text-primary"></i>
+            Services: <strong><%= plan.service_limit >= 2147483647 ? 'Unlimited' : plan.service_limit %></strong>
           </li>
-          <li class="mb-2 d-flex align-items-center">
-            <i class="bi bi-images text-primary me-2"></i>
-            <span>Gallery: <strong><%= plan.gallery_limit >= 2147483647 ? 'Unlimited' : plan.gallery_limit %></strong></span>
+          <li class="mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-images text-primary"></i>
+            Gallery: <strong><%= plan.gallery_limit >= 2147483647 ? 'Unlimited' : plan.gallery_limit %></strong>
           </li>
-          <li class="mb-2 d-flex align-items-center">
-            <i class="bi bi-star text-primary me-2"></i>
-            <span>Featured: <strong><%= plan.featured_listing ? 'Yes' : 'No' %></strong></span>
+          <li class="mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-star text-primary"></i>
+            Featured: <strong><%= plan.featured_listing ? 'Yes' : 'No' %></strong>
           </li>
-          <li class="mb-2 d-flex align-items-center">
-            <i class="bi bi-chat-dots text-primary me-2"></i>
-            <span>Chat: <strong class="text-capitalize"><%= plan.chat_support %></strong></span>
+          <li class="mb-1 d-flex align-items-center gap-2">
+            <i class="bi bi-chat-dots text-primary"></i>
+            Chat: <strong class="text-capitalize"><%= plan.chat_support %></strong>
           </li>
         </ul>
+
         <div class="d-flex gap-2">
           <button class="btn btn-outline-primary btn-sm flex-fill" data-bs-toggle="modal" data-bs-target="#editPlan<%= plan.id %>">
             <i class="bi bi-pencil me-1"></i>Edit
           </button>
           <form method="POST" action="/admin/subscriptions/<%= plan.id %>/toggle" class="flex-fill">
-            <button class="btn btn-sm w-100 <%= plan.is_active?'btn-outline-warning':'btn-outline-success' %>">
+            <button class="btn btn-sm w-100 <%= plan.is_active ? 'btn-outline-warning' : 'btn-outline-success' %>">
               <i class="bi <%= plan.is_active ? 'bi-pause-circle' : 'bi-check-circle' %> me-1"></i>
               <%= plan.is_active ? 'Disable' : 'Enable' %>
             </button>
@@ -81,14 +148,12 @@
       </div>
     </div>
 
-    <!-- Edit Plan Modal -->
+    <!-- Edit Modal -->
     <div class="modal fade" id="editPlan<%= plan.id %>" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
-          <div class="modal-header bg-light border-bottom">
-            <h6 class="modal-title fw-semibold">
-              <i class="bi bi-pencil text-primary me-2"></i>Edit Plan: <%= (plan.name||'').toUpperCase() %>
-            </h6>
+          <div class="modal-header bg-light">
+            <h6 class="modal-title fw-semibold"><i class="bi bi-pencil text-primary me-2"></i>Edit: <%= plan.name.toUpperCase() %></h6>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <form method="POST" action="/admin/subscriptions/<%= plan.id %>/update">
@@ -127,13 +192,9 @@
                 </div>
               </div>
             </div>
-            <div class="modal-footer bg-light border-top">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                <i class="bi bi-x-lg me-1"></i>Cancel
-              </button>
-              <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg me-1"></i>Save Changes
-              </button>
+            <div class="modal-footer bg-light">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save</button>
             </div>
           </form>
         </div>
@@ -143,14 +204,179 @@
 <% }) %>
 </div>
 
+<!-- Expiring Soon Alert -->
+<% if(expiringSoon.length){ %>
+<div class="card border-0 shadow-sm border-start border-warning border-4 mb-4">
+  <div class="card-header bg-warning bg-opacity-10 border-bottom d-flex justify-content-between align-items-center">
+    <h6 class="mb-0 fw-semibold text-warning">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>Expiring Within 7 Days (<%= expiringSoon.length %>)
+    </h6>
+    <!-- Notify All Expiring -->
+    <form method="POST" action="/admin/subscriptions/notify-renewal">
+      <input type="hidden" name="type" value="expiring"/>
+      <button class="btn btn-sm btn-warning" onclick="return confirm('Send renewal reminder to all <%= expiringSoon.length %> expiring vendors?')">
+        <i class="bi bi-bell-fill me-1"></i>Notify All (<%= expiringSoon.length %>)
+      </button>
+    </form>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr><th>Vendor</th><th>Plan</th><th>Cycle</th><th>Expires On</th><th>Days Left</th><th></th></tr>
+      </thead>
+      <tbody>
+      <% expiringSoon.forEach(s => {
+        const daysLeft = Math.ceil((new Date(s.expires_at) - new Date()) / (1000*60*60*24));
+      %>
+        <tr>
+          <td>
+            <div class="fw-semibold text-dark"><%= s.Vendor?.business_name || '—' %></div>
+            <small class="text-muted"><%= s.Vendor?.User?.mobile || '' %></small>
+          </td>
+          <td>
+            <span class="badge bg-primary rounded-pill text-capitalize"><%= s.SubscriptionPlan?.name || '—' %></span>
+          </td>
+          <td><span class="badge bg-light text-dark border text-capitalize"><%= s.billing_cycle %></span></td>
+          <td class="text-danger fw-semibold"><%= new Date(s.expires_at).toLocaleDateString('en-IN') %></td>
+          <td>
+            <span class="badge <%= daysLeft <= 2 ? 'bg-danger' : 'bg-warning text-dark' %> rounded-pill">
+              <%= daysLeft %> day<%= daysLeft !== 1 ? 's' : '' %>
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="/admin/vendors/<%= s.Vendor?.id %>" class="btn btn-sm btn-outline-primary" title="View Vendor">
+                <i class="bi bi-eye"></i>
+              </a>
+              <form method="POST" action="/admin/subscriptions/notify-renewal">
+                <input type="hidden" name="type" value="single"/>
+                <input type="hidden" name="vendor_id" value="<%= s.vendor_id %>"/>
+                <button class="btn btn-sm btn-outline-warning" title="Send Renewal Reminder">
+                  <i class="bi bi-bell"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% } %>
+
+<!-- Active Subscriptions Table -->
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h6 class="mb-0 fw-semibold text-dark">
+      <i class="bi bi-people me-2 text-primary"></i>Active Vendor Subscriptions
+    </h6>
+    <div class="d-flex gap-2">
+      <form method="POST" action="/admin/subscriptions/notify-renewal">
+        <input type="hidden" name="type" value="expiring"/>
+        <button class="btn btn-sm btn-outline-warning" <%= expiringSoon.length ? '' : 'disabled' %>>
+          <i class="bi bi-bell me-1"></i>Notify Expiring (<%= expiringSoon.length %>)
+        </button>
+      </form>
+      <form method="POST" action="/admin/subscriptions/notify-renewal">
+        <input type="hidden" name="type" value="expired"/>
+        <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Send expired notice to all vendors with lapsed subscriptions?')">
+          <i class="bi bi-bell-slash me-1"></i>Notify Expired
+        </button>
+      </form>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th>
+          <th>Vendor</th>
+          <th>Plan</th>
+          <th>Billing</th>
+          <th>Started</th>
+          <th>Renewal Date</th>
+          <th>Days Left</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+      <% if(activeSubscriptions.length){ activeSubscriptions.forEach((s, i) => {
+        const daysLeft = Math.ceil((new Date(s.expires_at) - new Date()) / (1000*60*60*24));
+        const isExpired = daysLeft <= 0;
+        const isExpiringSoon = !isExpired && daysLeft <= 7;
+      %>
+        <tr class="<%= isExpired ? 'table-danger opacity-75' : isExpiringSoon ? 'table-warning' : '' %>">
+          <td class="text-muted small"><%= i+1 %></td>
+          <td>
+            <div class="fw-semibold text-dark"><%= s.Vendor?.business_name || '—' %></div>
+            <small class="text-muted">
+              <i class="bi bi-phone me-1"></i><%= s.Vendor?.User?.mobile || '' %>
+            </small>
+          </td>
+          <td>
+            <span class="badge rounded-pill <%=
+              s.SubscriptionPlan?.name === 'basic'    ? 'bg-warning text-dark' :
+              s.SubscriptionPlan?.name === 'pro'      ? 'bg-info text-dark'    :
+              s.SubscriptionPlan?.name === 'advanced' ? 'bg-success'           : 'bg-secondary'
+            %> text-capitalize">
+              <% if(s.SubscriptionPlan?.name==='basic'){ %><i class="bi bi-award me-1"></i>
+              <% } else if(s.SubscriptionPlan?.name==='pro'){ %><i class="bi bi-gem me-1"></i>
+              <% } else { %><i class="bi bi-trophy me-1"></i><% } %>
+              <%= s.SubscriptionPlan?.name || '—' %>
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border text-capitalize"><%= s.billing_cycle %></span>
+          </td>
+          <td class="small text-muted"><%= new Date(s.starts_at).toLocaleDateString('en-IN') %></td>
+          <td class="fw-semibold <%= isExpired ? 'text-danger' : isExpiringSoon ? 'text-danger' : 'text-dark' %>">
+            <%= new Date(s.expires_at).toLocaleDateString('en-IN') %>
+          </td>
+          <td>
+            <span class="badge rounded-pill <%=
+              isExpired    ? 'bg-danger'              :
+              daysLeft <= 2  ? 'bg-danger'              :
+              daysLeft <= 7  ? 'bg-warning text-dark'   :
+              daysLeft <= 30 ? 'bg-info text-dark'      : 'bg-success'
+            %>">
+              <%= isExpired ? 'Expired (' + Math.abs(daysLeft) + 'd ago)' : daysLeft + 'd left' %>
+            </span>
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="/admin/vendors/<%= s.Vendor?.id %>" class="btn btn-sm btn-outline-primary" title="View Vendor">
+                <i class="bi bi-eye"></i>
+              </a>
+              <form method="POST" action="/admin/subscriptions/notify-renewal">
+                <input type="hidden" name="type" value="single"/>
+                <input type="hidden" name="vendor_id" value="<%= s.vendor_id %>"/>
+                <button class="btn btn-sm <%= isExpired ? 'btn-outline-danger' : isExpiringSoon ? 'btn-outline-warning' : 'btn-outline-secondary' %>" title="Send Renewal Reminder">
+                  <i class="bi bi-bell"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+      <% }) } else { %>
+        <tr>
+          <td colspan="8" class="text-center py-5 text-muted">
+            <i class="bi bi-star" style="font-size:2rem;"></i>
+            <p class="mt-2 mb-0">No active subscriptions</p>
+          </td>
+        </tr>
+      <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 <!-- Add Plan Modal -->
 <div class="modal fade" id="addPlanModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-light border-bottom">
-        <h6 class="modal-title fw-semibold">
-          <i class="bi bi-plus-circle text-primary me-2"></i>Add New Plan
-        </h6>
+      <div class="modal-header bg-light">
+        <h6 class="modal-title fw-semibold"><i class="bi bi-plus-circle text-primary me-2"></i>Add New Plan</h6>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="/admin/subscriptions">
@@ -159,9 +385,9 @@
             <div class="col-12">
               <label class="form-label fw-medium">Plan Name</label>
               <select name="name" class="form-select" required>
-                <option value="basic">Basic Plan</option>
-                <option value="pro">Pro Plan</option>
-                <option value="advanced">Advanced Plan</option>
+                <option value="basic">Basic</option>
+                <option value="pro">Pro</option>
+                <option value="advanced">Advanced</option>
               </select>
             </div>
             <div class="col-6">
@@ -197,13 +423,9 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer bg-light border-top">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-            <i class="bi bi-x-lg me-1"></i>Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-plus-lg me-1"></i>Create Plan
-          </button>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Create Plan</button>
         </div>
       </form>
     </div>

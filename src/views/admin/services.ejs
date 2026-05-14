@@ -1,7 +1,7 @@
 <%- include('partials/header') %>
 
 <% if(success&&success.length){ %>
-  <div class="alert alert-success alert-dismissible fade show" role="alert">
+  <div class="alert alert-success alert-dismissible fade show">
     <i class="bi bi-check-circle-fill me-2"></i><%= success %>
     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
   </div>
@@ -11,100 +11,86 @@
   <div class="card-header bg-white border-bottom">
     <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
       <div>
-        <h5 class="mb-1 fw-bold text-dark">
-          <i class="bi bi-tools me-2 text-primary"></i>Services Management
-        </h5>
+        <h5 class="mb-1 fw-bold text-dark"><i class="bi bi-tools me-2 text-primary"></i>Services Management</h5>
         <p class="text-muted small mb-0">Total: <span class="badge bg-primary"><%= total %></span> services</p>
       </div>
-      <form class="d-flex gap-2" method="GET">
-        <div class="input-group">
-          <span class="input-group-text bg-light border-end-0">
-            <i class="bi bi-search text-muted"></i>
-          </span>
-          <input type="text" name="search" class="form-control border-start-0" placeholder="Search services" value="<%= search %>" style="width:200px"/>
+      <form class="d-flex flex-wrap gap-2 align-items-center" method="GET">
+        <select name="vendor_id" class="form-select form-select-sm" style="width:180px" onchange="this.form.submit()">
+          <option value="">All Vendors</option>
+          <% allVendors.forEach(v => { %>
+            <option value="<%= v.id %>" <%= vendor_id == v.id ? 'selected' : '' %>><%= v.business_name %></option>
+          <% }) %>
+        </select>
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" name="search" class="form-control border-start-0" placeholder="Search services" value="<%= search %>" style="width:180px"/>
+          <% if (vendor_id) { %><input type="hidden" name="vendor_id" value="<%= vendor_id %>"/><% } %>
         </div>
-        <button class="btn btn-primary">
-          <i class="bi bi-search me-1"></i>Search
-        </button>
-        <% if(search){ %>
-          <a href="/admin/services" class="btn btn-outline-secondary">
-            <i class="bi bi-x-lg"></i>
-          </a>
+        <button class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Search</button>
+        <% if(search || vendor_id){ %>
+          <a href="/admin/services" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg"></i></a>
         <% } %>
       </form>
     </div>
   </div>
+
   <div class="table-responsive">
-    <table class="table table-hover mb-0">
+    <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
-        <tr><th>#</th><th>Service Details</th><th>Vendor</th><th>Category</th><th>Pricing</th><th>Status</th><th>Actions</th></tr>
+        <tr><th>#</th><th>Service</th><th>Vendor</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr>
       </thead>
       <tbody>
-      <% services.forEach((s,i) => { %>
+      <% services.forEach((s, i) => { %>
         <tr>
           <td class="text-muted small fw-medium"><%= (currentPage-1)*15+i+1 %></td>
           <td>
             <div class="fw-semibold text-dark"><%= s.name %></div>
             <% if(s.estimated_time){ %>
-              <small class="text-muted">
-                <i class="bi bi-clock me-1"></i><%= s.estimated_time %>
-              </small>
+              <small class="text-muted"><i class="bi bi-clock me-1"></i><%= s.estimated_time %></small>
             <% } %>
           </td>
-          <td>
-            <div class="d-flex align-items-center gap-1">
-              <i class="bi bi-shop text-muted" style="font-size:12px;"></i>
-              <span class="fw-medium"><%= s.Vendor?.business_name||'—' %></span>
-            </div>
-          </td>
-          <td>
-            <div class="d-flex align-items-center gap-1">
-              <i class="bi bi-tag text-muted" style="font-size:12px;"></i>
-              <span><%= s.Category?.name||'—' %></span>
-            </div>
-          </td>
-          <td class="fw-semibold text-dark">₹<%= parseFloat(s.price).toFixed(0) %></td>
+          <td><span class="fw-medium"><%= s.Vendor?.business_name || '—' %></span></td>
+          <td><span class="badge bg-light text-dark border"><%= s.Category?.name || '—' %></span></td>
+          <td class="fw-bold text-dark">₹<%= parseFloat(s.price).toFixed(0) %></td>
           <td>
             <span class="badge <%= s.is_active ? 'bg-success' : 'bg-secondary' %> rounded-pill">
-              <i class="bi <%= s.is_active ? 'bi-check-circle' : 'bi-pause-circle' %> me-1" style="font-size:10px;"></i>
               <%= s.is_active ? 'Active' : 'Inactive' %>
             </span>
           </td>
           <td>
-            <form method="POST" action="/admin/services/<%= s.id %>/toggle" class="d-inline">
-              <button class="btn btn-sm <%= s.is_active?'btn-outline-warning':'btn-outline-success' %>">
-                <% if(s.is_active){ %>
-                  <i class="bi bi-pause-circle me-1"></i>Disable
-                <% } else { %>
-                  <i class="bi bi-check-circle me-1"></i>Enable
-                <% } %>
-              </button>
-            </form>
+            <div class="btn-group btn-group-sm">
+              <a href="/admin/services/<%= s.id %>" class="btn btn-outline-primary" title="View Detail">
+                <i class="bi bi-eye"></i>
+              </a>
+              <form method="POST" action="/admin/services/<%= s.id %>/toggle" class="d-inline">
+                <button class="btn <%= s.is_active ? 'btn-outline-warning' : 'btn-outline-success' %>" title="<%= s.is_active ? 'Disable' : 'Enable' %>">
+                  <i class="bi <%= s.is_active ? 'bi-pause-circle' : 'bi-check-circle' %>"></i>
+                </button>
+              </form>
+            </div>
           </td>
         </tr>
       <% }) %>
       <% if(!services.length){ %>
         <tr>
-          <td colspan="7" class="text-center py-5">
-            <div class="text-muted">
-              <i class="bi bi-tools" style="font-size:2rem;"></i>
-              <p class="mt-2 mb-0">No services found</p>
-              <% if(search){ %>
-                <small>Try adjusting your search criteria</small>
-              <% } %>
-            </div>
+          <td colspan="7" class="text-center py-5 text-muted">
+            <i class="bi bi-tools" style="font-size:2rem;"></i>
+            <p class="mt-2 mb-0">No services found</p>
           </td>
         </tr>
       <% } %>
       </tbody>
     </table>
   </div>
-  <% if(pages>1){ %>
+
+  <% if(pages > 1){ %>
   <div class="card-footer d-flex justify-content-between align-items-center">
-    <small class="text-muted">Showing <%= (currentPage-1)*15+1 %>–<%= Math.min(currentPage*15,total) %> of <%= total %></small>
+    <small class="text-muted">Showing <%= (currentPage-1)*15+1 %>–<%= Math.min(currentPage*15, total) %> of <%= total %></small>
     <nav><ul class="pagination pagination-sm mb-0">
-      <% for(let p=1;p<=pages;p++){ %>
-        <li class="page-item <%= p==currentPage?'active':'' %>"><a class="page-link" href="?page=<%= p %>&search=<%= search %>"><%= p %></a></li>
+      <% for(let p=1; p<=pages; p++){ %>
+        <li class="page-item <%= p==currentPage?'active':'' %>">
+          <a class="page-link" href="?page=<%= p %>&search=<%= search %>&vendor_id=<%= vendor_id %>"><%= p %></a>
+        </li>
       <% } %>
     </ul></nav>
   </div>

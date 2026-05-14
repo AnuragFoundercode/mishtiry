@@ -54,6 +54,7 @@ Review.belongsTo(Booking, { foreignKey: 'booking_id' });
 Vendor.hasMany(VendorSubscription, { foreignKey: 'vendor_id' });
 VendorSubscription.belongsTo(Vendor, { foreignKey: 'vendor_id' });
 VendorSubscription.belongsTo(SubscriptionPlan, { foreignKey: 'plan_id' });
+SubscriptionPlan.hasMany(VendorSubscription, { foreignKey: 'plan_id' });
 
 // Notification
 User.hasMany(Notification, { foreignKey: 'user_id' });

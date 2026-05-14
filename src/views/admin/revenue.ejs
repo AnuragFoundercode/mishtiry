@@ -1,5 +1,35 @@
 <%- include('partials/header') %>
 
+<!-- Date Filter -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body py-3">
+    <form class="d-flex flex-wrap gap-3 align-items-end" method="GET">
+      <div>
+        <label class="form-label fw-medium mb-1 small">From Date</label>
+        <input type="date" name="date_from" class="form-control form-control-sm" value="<%= date_from %>" style="width:160px"/>
+      </div>
+      <div>
+        <label class="form-label fw-medium mb-1 small">To Date</label>
+        <input type="date" name="date_to" class="form-control form-control-sm" value="<%= date_to %>" style="width:160px"/>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+        <% if(date_from || date_to){ %>
+          <a href="/admin/revenue" class="btn btn-outline-secondary btn-sm"><i class="bi bi-x-lg me-1"></i>Clear</a>
+        <% } %>
+      </div>
+      <% if(date_from || date_to){ %>
+        <div class="ms-auto">
+          <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2">
+            <i class="bi bi-calendar-range me-1"></i>
+            Filtered: <%= date_from || '...' %> → <%= date_to || '...' %>
+          </span>
+        </div>
+      <% } %>
+    </form>
+  </div>
+</div>
+
 <!-- Revenue Cards -->
 <div class="row g-3 mb-4">
   <div class="col-6 col-lg-3">
@@ -53,87 +83,72 @@
   <div class="col-lg-5">
     <div class="card h-100 border-0 shadow-sm">
       <div class="card-header bg-white border-bottom">
-        <h6 class="mb-0 fw-semibold text-dark">
-          <i class="bi bi-bar-chart me-2 text-primary"></i>Revenue by Model
-        </h6>
+        <h6 class="mb-0 fw-semibold text-dark"><i class="bi bi-bar-chart me-2 text-primary"></i>Revenue by Model</h6>
       </div>
       <div class="card-body">
         <% if(byModel.length){ byModel.forEach(m => { %>
-          <div class="d-flex justify-content-between align-items-center mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
             <div>
               <span class="fw-semibold text-dark">
                 <% if(m.revenue_model_applied === 'commission'){ %><i class="bi bi-percent text-primary me-1"></i>
                 <% } else if(m.revenue_model_applied === 'subscription'){ %><i class="bi bi-star text-warning me-1"></i>
                 <% } else if(m.revenue_model_applied === 'hybrid'){ %><i class="bi bi-shuffle text-info me-1"></i>
                 <% } else { %><i class="bi bi-question-circle text-muted me-1"></i><% } %>
-                <%= m.revenue_model_applied||'Unknown' %>
+                <%= m.revenue_model_applied || 'Unknown' %>
               </span>
               <br><small class="text-muted"><%= m.count %> bookings</small>
             </div>
             <div class="text-end">
-              <div class="fw-bold text-success">₹<%= parseFloat(m.total||0).toFixed(2) %></div>
-              <small class="text-muted">commission</small>
+              <div class="fw-bold text-success">₹<%= parseFloat(m.total || 0).toFixed(2) %></div>
             </div>
           </div>
           <div class="progress mb-3" style="height:6px">
-            <div class="progress-bar bg-success" style="width:<%= totalCommission>0?(m.total/totalCommission*100).toFixed(0):0 %>%"></div>
+            <div class="progress-bar bg-success" style="width:<%= totalCommission > 0 ? (m.total / totalCommission * 100).toFixed(0) : 0 %>%"></div>
           </div>
         <% }) } else { %>
           <div class="text-center py-4 text-muted">
             <i class="bi bi-bar-chart" style="font-size:2rem;"></i>
-            <p class="mt-2 mb-0">No paid bookings yet</p>
+            <p class="mt-2 mb-0">No paid bookings<%= date_from || date_to ? ' in selected range' : '' %></p>
           </div>
         <% } %>
       </div>
     </div>
   </div>
 
-  <!-- Platform Settings Summary -->
+  <!-- Platform Settings -->
   <div class="col-lg-7">
     <div class="card h-100 border-0 shadow-sm">
       <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
-        <h6 class="mb-0 fw-semibold text-dark">
-          <i class="bi bi-gear me-2 text-primary"></i>Current Platform Config
-        </h6>
-        <a href="/admin/settings" class="btn btn-sm btn-outline-primary">
-          <i class="bi bi-pencil me-1"></i>Edit
-        </a>
+        <h6 class="mb-0 fw-semibold text-dark"><i class="bi bi-gear me-2 text-primary"></i>Current Platform Config</h6>
+        <a href="/admin/settings" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-6">
             <div class="p-3 rounded-3 bg-primary bg-opacity-10">
-              <div class="mb-2">
-                <i class="bi bi-credit-card text-primary" style="font-size:1.5rem;"></i>
-              </div>
-              <h5 class="mb-0 fw-bold text-dark"><%= settings.platform_charge_percent %>%</h5>
+              <i class="bi bi-credit-card text-primary" style="font-size:1.5rem;"></i>
+              <h5 class="mb-0 fw-bold text-dark mt-2"><%= settings.platform_charge_percent %>%</h5>
               <small class="text-muted">Platform Charge</small>
             </div>
           </div>
           <div class="col-6">
             <div class="p-3 rounded-3 bg-success bg-opacity-10">
-              <div class="mb-2">
-                <i class="bi bi-receipt text-success" style="font-size:1.5rem;"></i>
-              </div>
-              <h5 class="mb-0 fw-bold text-dark"><%= settings.gst_percent %>%</h5>
+              <i class="bi bi-receipt text-success" style="font-size:1.5rem;"></i>
+              <h5 class="mb-0 fw-bold text-dark mt-2"><%= settings.gst_percent %>%</h5>
               <small class="text-muted">GST on Platform Charge</small>
             </div>
           </div>
           <div class="col-6">
             <div class="p-3 rounded-3 bg-warning bg-opacity-10">
-              <div class="mb-2">
-                <i class="bi bi-percent text-warning" style="font-size:1.5rem;"></i>
-              </div>
-              <h5 class="mb-0 fw-bold text-dark"><%= settings.default_commission_percent %>%</h5>
+              <i class="bi bi-percent text-warning" style="font-size:1.5rem;"></i>
+              <h5 class="mb-0 fw-bold text-dark mt-2"><%= settings.default_commission_percent %>%</h5>
               <small class="text-muted">Default Commission</small>
             </div>
           </div>
           <div class="col-6">
             <div class="p-3 rounded-3 bg-info bg-opacity-10">
-              <div class="mb-2">
-                <i class="bi bi-shuffle text-info" style="font-size:1.5rem;"></i>
-              </div>
-              <h5 class="mb-0 fw-bold text-dark text-capitalize"><%= settings.default_revenue_model %></h5>
+              <i class="bi bi-shuffle text-info" style="font-size:1.5rem;"></i>
+              <h5 class="mb-0 fw-bold text-dark mt-2 text-capitalize"><%= settings.default_revenue_model %></h5>
               <small class="text-muted">Default Revenue Model</small>
             </div>
           </div>
@@ -145,38 +160,43 @@
 
 <!-- Recent Paid Bookings -->
 <div class="card border-0 shadow-sm">
-  <div class="card-header bg-white border-bottom">
+  <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
     <h6 class="mb-0 fw-semibold text-dark">
-      <i class="bi bi-credit-card me-2 text-primary"></i>Recent Paid Bookings
+      <i class="bi bi-credit-card me-2 text-primary"></i>Paid Bookings
+      <% if(date_from || date_to){ %>
+        <small class="text-muted fw-normal ms-1">(filtered)</small>
+      <% } %>
     </h6>
+    <span class="badge bg-primary"><%= recentPaid.length %> records</span>
   </div>
   <div class="table-responsive">
-    <table class="table table-hover mb-0">
+    <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
-        <tr><th>Booking ID</th><th>Customer</th><th>Vendor</th><th>Service</th><th>Base Amount</th><th>Platform Fee</th><th>GST</th><th>Total Paid</th><th>Commission</th><th>Vendor Payout</th></tr>
+        <tr>
+          <th>ID</th><th>Customer</th><th>Vendor</th><th>Service</th>
+          <th>Base</th><th>Platform</th><th>GST</th><th>Total</th><th>Commission</th><th>Vendor Payout</th>
+        </tr>
       </thead>
       <tbody>
       <% recentPaid.forEach(b => { %>
         <tr>
-          <td class="text-muted small fw-medium">#<%= b.id %></td>
-          <td class="fw-medium"><%= b.User?.name||'—' %></td>
-          <td><%= b.Vendor?.business_name||'—' %></td>
-          <td><%= b.Service?.name||'—' %></td>
-          <td class="fw-semibold">₹<%= parseFloat(b.amount||0).toFixed(0) %></td>
-          <td class="text-warning fw-semibold">₹<%= parseFloat(b.platform_charge||0).toFixed(0) %></td>
-          <td class="text-info fw-semibold">₹<%= parseFloat(b.gst_amount||0).toFixed(0) %></td>
-          <td class="fw-bold text-dark">₹<%= parseFloat(b.total_amount||0).toFixed(0) %></td>
-          <td class="text-success fw-semibold">₹<%= parseFloat(b.commission_amount||0).toFixed(0) %> (<%= b.commission_percent_applied||0 %>%)</td>
-          <td class="text-primary fw-bold">₹<%= parseFloat(b.vendor_payout||0).toFixed(0) %></td>
+          <td><a href="/admin/bookings/<%= b.id %>" class="text-decoration-none text-muted small fw-medium">#<%= b.id %></a></td>
+          <td class="fw-medium"><%= b.User?.name || '—' %></td>
+          <td><%= b.Vendor?.business_name || '—' %></td>
+          <td><%= b.Service?.name || '—' %></td>
+          <td class="fw-semibold">₹<%= parseFloat(b.amount || 0).toFixed(0) %></td>
+          <td class="text-warning fw-semibold">₹<%= parseFloat(b.platform_charge || 0).toFixed(0) %></td>
+          <td class="text-info fw-semibold">₹<%= parseFloat(b.gst_amount || 0).toFixed(0) %></td>
+          <td class="fw-bold text-dark">₹<%= parseFloat(b.total_amount || 0).toFixed(0) %></td>
+          <td class="text-success fw-semibold">₹<%= parseFloat(b.commission_amount || 0).toFixed(0) %></td>
+          <td class="text-primary fw-bold">₹<%= parseFloat(b.vendor_payout || 0).toFixed(0) %></td>
         </tr>
       <% }) %>
       <% if(!recentPaid.length){ %>
         <tr>
-          <td colspan="10" class="text-center py-5">
-            <div class="text-muted">
-              <i class="bi bi-credit-card" style="font-size:2rem;"></i>
-              <p class="mt-2 mb-0">No paid bookings yet</p>
-            </div>
+          <td colspan="10" class="text-center py-5 text-muted">
+            <i class="bi bi-credit-card" style="font-size:2rem;"></i>
+            <p class="mt-2 mb-0">No paid bookings<%= date_from || date_to ? ' in selected date range' : '' %></p>
           </td>
         </tr>
       <% } %>

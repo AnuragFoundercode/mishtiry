@@ -1,17 +1,12 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const User = require('../../models/user.model');
-const Vendor = require('../../models/vendor.model');
-const VendorKyc = require('../../models/vendor_kyc.model');
-const VendorBankDetail = require('../../models/vendor_bank_detail.model');
-const Booking = require('../../models/booking.model');
-const Category = require('../../models/category.model');
-const Service = require('../../models/service.model');
-const Notification = require('../../models/notification.model');
-const Policy = require('../../models/policy.model');
-const Zone = require('../../models/zone.model');
+const {
+  User, Vendor, VendorKyc, VendorBankDetail,
+  Booking, Category, Service, Notification,
+  Policy, Zone,
+  SubscriptionPlan, VendorSubscription,
+} = require('../../models/index');
 const PlatformSetting = require('../../models/platform_setting.model');
-const { SubscriptionPlan, VendorSubscription } = require('../../models/subscription.model');
 const { sendEmailNotification } = require('../../helpers/notification.helper');
 const { getSettings } = require('../../helpers/pricing.helper');
 const { Op } = require('sequelize');
@@ -365,8 +360,52 @@ const cancelVendorSubscription = async (req, res) => {
 const subscriptionPlans = async (req, res) => {
   try {
     const plans = await SubscriptionPlan.findAll({ order: [['id', 'ASC']] });
-    const activeSubs = await VendorSubscription.count({ where: { status: 'active' } });
-    res.render('admin/subscriptions', { title: 'Subscription Plans', page: 'subscriptions', plans, activeSubs, adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error') });
+
+    // Stats per plan: total subscriptions, active count
+    const planStats = await VendorSubscription.findAll({
+      attributes: [
+        'plan_id',
+        'status',
+        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+      ],
+      group: ['plan_id', 'status'],
+      raw: true,
+    });
+
+    // Active vendor subscriptions with vendor + plan details
+    const now = new Date();
+    const activeSubscriptions = await VendorSubscription.findAll({
+      where: { status: 'active' },
+      order: [['expires_at', 'ASC']],
+      include: [
+        { model: Vendor, attributes: ['id', 'business_name'], include: [{ model: User, attributes: ['name', 'mobile'] }] },
+        { model: SubscriptionPlan, attributes: ['name', 'price_monthly', 'price_yearly'] },
+      ],
+    });
+
+    // Expiring soon (within 7 days, but not already expired)
+    const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const expiringSoon = activeSubscriptions.filter(s => {
+      const exp = new Date(s.expires_at);
+      return exp > now && exp <= soon;
+    });
+
+    // Overall stats
+    const totalRevenue = await VendorSubscription.findAll({
+      attributes: [[sequelize.fn('COUNT', sequelize.col('id')), 'total']],
+      raw: true,
+    });
+    const activeSubs  = await VendorSubscription.count({ where: { status: 'active' } });
+    const expiredSubs = await VendorSubscription.count({ where: { status: 'expired' } });
+    const cancelledSubs = await VendorSubscription.count({ where: { status: 'cancelled' } });
+
+    res.render('admin/subscriptions', {
+      title: 'Subscription Plans', page: 'subscriptions',
+      plans, planStats, activeSubscriptions, expiringSoon,
+      activeSubs, expiredSubs, cancelledSubs,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
   } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
@@ -438,14 +477,46 @@ const deleteCategory = async (req, res) => {
 
 const services = async (req, res) => {
   try {
-    const { search = '', page = 1 } = req.query;
+    const { search = '', vendor_id = '', page = 1 } = req.query;
     const limit = 15, offset = (page - 1) * limit;
-    const where = search ? { name: { [Op.like]: `%${search}%` } } : {};
+    const where = {};
+    if (search) where.name = { [Op.like]: `%${search}%` };
+    if (vendor_id) where.vendor_id = vendor_id;
     const { count, rows } = await Service.findAndCountAll({
       where, limit, offset, order: [['created_at', 'DESC']],
-      include: [{ model: Vendor, attributes: ['business_name'] }, { model: Category, attributes: ['name'] }],
+      include: [{ model: Vendor, attributes: ['id', 'business_name'] }, { model: Category, attributes: ['name'] }],
     });
-    res.render('admin/services', { title: 'Services', page: 'services', services: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), search, adminName: req.session.adminName, success: req.flash('success') });
+    const allVendors = await Vendor.findAll({ attributes: ['id', 'business_name'], order: [['business_name', 'ASC']] });
+    res.render('admin/services', { title: 'Services', page: 'services', services: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), search, vendor_id, allVendors, adminName: req.session.adminName, success: req.flash('success') });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
+
+const serviceDetail = async (req, res) => {
+  try {
+    const service = await Service.findByPk(req.params.id, {
+      include: [
+        { model: Vendor, attributes: ['id', 'business_name', 'address', 'avg_rating'] },
+        { model: Category, attributes: ['name'] },
+      ],
+    });
+    if (!service) { req.flash('error', 'Service not found'); return res.redirect('/admin/services'); }
+
+    const bookings = await Booking.findAll({
+      where: { service_id: service.id },
+      order: [['created_at', 'DESC']],
+      include: [{ model: User, attributes: ['id', 'name', 'mobile'] }],
+    });
+
+    const totalBookings = bookings.length;
+    const totalRevenue  = bookings.filter(b => b.payment_status === 'paid').reduce((s, b) => s + parseFloat(b.total_amount || 0), 0);
+    const completedCount = bookings.filter(b => b.status === 'completed').length;
+
+    res.render('admin/service-detail', {
+      title: service.name, page: 'services',
+      service, bookings, totalBookings, totalRevenue, completedCount,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
   } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
@@ -453,7 +524,8 @@ const toggleService = async (req, res) => {
   const svc = await Service.findByPk(req.params.id);
   if (svc) await svc.update({ is_active: !svc.is_active });
   req.flash('success', 'Service status updated');
-  res.redirect('/admin/services');
+  const ref = req.headers.referer || '/admin/services';
+  res.redirect(ref);
 };
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────
@@ -527,20 +599,28 @@ const bookings = async (req, res) => {
 
 const revenue = async (req, res) => {
   try {
-    const totalCommission = await Booking.sum('commission_amount', { where: { payment_status: 'paid' } }) || 0;
-    const totalPlatformCharge = await Booking.sum('platform_charge', { where: { payment_status: 'paid' } }) || 0;
-    const totalGst = await Booking.sum('gst_amount', { where: { payment_status: 'paid' } }) || 0;
-    const totalRevenue = totalCommission + totalPlatformCharge + totalGst;
+    const { date_from = '', date_to = '' } = req.query;
+    const dateWhere = { payment_status: 'paid' };
+    if (date_from) dateWhere.created_at = { ...dateWhere.created_at, [Op.gte]: new Date(date_from) };
+    if (date_to)   dateWhere.created_at = { ...dateWhere.created_at, [Op.lte]: new Date(date_to + ' 23:59:59') };
+
+    const [totalCommission, totalPlatformCharge, totalGst] = await Promise.all([
+      Booking.sum('commission_amount', { where: dateWhere }),
+      Booking.sum('platform_charge',   { where: dateWhere }),
+      Booking.sum('gst_amount',        { where: dateWhere }),
+    ]);
+    const totalRevenue = (totalCommission || 0) + (totalPlatformCharge || 0) + (totalGst || 0);
+
     const byModel = await Booking.findAll({
       attributes: ['revenue_model_applied', [sequelize.fn('SUM', sequelize.col('commission_amount')), 'total'], [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
-      where: { payment_status: 'paid' }, group: ['revenue_model_applied'], raw: true,
+      where: dateWhere, group: ['revenue_model_applied'], raw: true,
     });
     const recentPaid = await Booking.findAll({
-      where: { payment_status: 'paid' }, limit: 10, order: [['updated_at', 'DESC']],
+      where: dateWhere, limit: 20, order: [['updated_at', 'DESC']],
       include: [{ model: User, attributes: ['name'] }, { model: Vendor, attributes: ['business_name'] }, { model: Service, attributes: ['name'] }],
     });
     const settings = await getSettings();
-    res.render('admin/revenue', { title: 'Revenue', page: 'revenue', totalCommission, totalPlatformCharge, totalGst, totalRevenue, byModel, recentPaid, settings, adminName: req.session.adminName, success: req.flash('success') });
+    res.render('admin/revenue', { title: 'Revenue', page: 'revenue', totalCommission: totalCommission || 0, totalPlatformCharge: totalPlatformCharge || 0, totalGst: totalGst || 0, totalRevenue, byModel, recentPaid, settings, date_from, date_to, adminName: req.session.adminName, success: req.flash('success') });
   } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
@@ -705,6 +785,92 @@ const deleteZone = async (req, res) => {
   } catch (e) { req.flash('error', e.message); res.redirect('/admin/zones'); }
 };
 
+// ─── Subscription Renewal Notification ──────────────────────────────────────
+
+const sendRenewalNotification = async (req, res) => {
+  try {
+    const { vendor_id, type } = req.body; // type: 'single' | 'expiring' | 'expired'
+    const { sendPushNotification } = require('../../helpers/notification.helper');
+    const now = new Date();
+    const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    let subscriptions = [];
+
+    if (type === 'single' && vendor_id) {
+      // Single vendor notification
+      subscriptions = await VendorSubscription.findAll({
+        where: { vendor_id, status: 'active' },
+        include: [
+          { model: Vendor, attributes: ['id', 'business_name'], include: [{ model: User, attributes: ['id', 'name', 'fcm_token'] }] },
+          { model: SubscriptionPlan, attributes: ['name'] },
+        ],
+      });
+    } else if (type === 'expiring') {
+      // All expiring within 7 days
+      subscriptions = await VendorSubscription.findAll({
+        where: { status: 'active', expires_at: { [Op.gt]: now, [Op.lte]: soon } },
+        include: [
+          { model: Vendor, attributes: ['id', 'business_name'], include: [{ model: User, attributes: ['id', 'name', 'fcm_token'] }] },
+          { model: SubscriptionPlan, attributes: ['name'] },
+        ],
+      });
+    } else if (type === 'expired') {
+      // All expired but still marked active (stale)
+      subscriptions = await VendorSubscription.findAll({
+        where: { status: 'active', expires_at: { [Op.lt]: now } },
+        include: [
+          { model: Vendor, attributes: ['id', 'business_name'], include: [{ model: User, attributes: ['id', 'name', 'fcm_token'] }] },
+          { model: SubscriptionPlan, attributes: ['name'] },
+        ],
+      });
+    }
+
+    if (!subscriptions.length) {
+      req.flash('error', 'No vendors found for this action');
+      return res.redirect('/admin/subscriptions');
+    }
+
+    let sent = 0;
+    for (const sub of subscriptions) {
+      const vendor = sub.Vendor;
+      const user   = vendor?.User;
+      const plan   = sub.SubscriptionPlan?.name || 'your';
+      const expiry = new Date(sub.expires_at).toLocaleDateString('en-IN');
+      const daysLeft = Math.ceil((new Date(sub.expires_at) - now) / (1000 * 60 * 60 * 24));
+
+      let title, body;
+      if (type === 'expired') {
+        title = 'Subscription Expired';
+        body  = `Your ${plan} plan has expired. Renew now to continue listing your services.`;
+      } else if (daysLeft <= 2) {
+        title = '⚠️ Subscription Expiring Today/Tomorrow!';
+        body  = `Your ${plan} plan expires on ${expiry}. Renew immediately to avoid service disruption.`;
+      } else {
+        title = '🔔 Subscription Renewal Reminder';
+        body  = `Your ${plan} plan expires on ${expiry} (${daysLeft} days left). Renew now to stay active.`;
+      }
+
+      // Save in-app notification
+      await Notification.create({
+        user_id: user.id,
+        title,
+        body,
+        type: 'system',
+      });
+
+      // Push notification if FCM token available
+      if (user.fcm_token) {
+        await sendPushNotification(user.fcm_token, title, body).catch(() => {});
+      }
+
+      sent++;
+    }
+
+    req.flash('success', `Renewal notification sent to ${sent} vendor(s)`);
+    res.redirect('/admin/subscriptions');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/subscriptions'); }
+};
+
 module.exports = {
   showLogin, doLogin, doLogout,
   showForgotPassword, doForgotPassword, showResetPassword, doResetPassword,
@@ -715,7 +881,7 @@ module.exports = {
   assignVendorSubscription, cancelVendorSubscription,
   subscriptionPlans, createPlan, updatePlan, togglePlan,
   categories, createCategory, updateCategory, deleteCategory,
-  services, toggleService,
+  services, serviceDetail, toggleService,
   bookings, bookingDetail, updateBookingStatus,
   revenue,
   platformSettings, updatePlatformSettings,
@@ -723,4 +889,5 @@ module.exports = {
   doChangePassword,
   policies, createPolicy, updatePolicy, deletePolicy,
   zones, createZone, updateZone, deleteZone,
+  sendRenewalNotification,
 };
