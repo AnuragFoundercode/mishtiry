@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: May 13, 2026 at 06:18 PM
+-- Generation Time: May 14, 2026 at 12:09 PM
 -- Server version: 10.11.6-MariaDB-log
 -- PHP Version: 8.3.30
 
@@ -57,8 +57,8 @@ CREATE TABLE `bookings` (
 
 INSERT INTO `bookings` (`id`, `user_id`, `vendor_id`, `service_id`, `booking_date`, `notes`, `address`, `zone_id`, `status`, `amount`, `platform_charge`, `gst_amount`, `total_amount`, `commission_amount`, `commission_percent_applied`, `vendor_payout`, `revenue_model_applied`, `payment_status`, `payment_id`, `created_at`, `updated_at`) VALUES
 (43, 2, 1, 1, '2024-01-15 10:00:00', 'Kitchen tap is leaking badly', 'A-123, Lajpat Nagar, Delhi', 6, 'completed', 299.00, 14.95, 53.82, 367.77, 29.90, 0.00, 0.00, NULL, 'paid', NULL, '2026-05-12 07:52:12', '2026-05-12 07:52:12'),
-(44, 2, 6, 20, '2024-01-22 11:00:00', 'AC not cooling, need repair', 'A-123, Lajpat Nagar, Delhi', 6, 'completed', 899.00, 44.95, 161.82, 1105.77, 89.90, 0.00, 0.00, NULL, 'paid', NULL, '2026-05-12 07:52:12', '2026-05-13 04:32:46'),
-(45, 4, 5, 16, '2024-01-25 10:00:00', 'Paint living room walls', 'C-789, Dwarka, Delhi', 6, 'pending', 2999.00, 149.95, 539.82, 3688.77, 299.90, 0.00, 0.00, NULL, 'pending', NULL, '2026-05-12 07:52:12', '2026-05-13 03:54:20');
+(44, 2, 6, 20, '2024-01-22 11:00:00', 'AC not cooling, need repair', 'A-123, Lajpat Nagar, Delhi', 6, 'in_progress', 899.00, 44.95, 161.82, 1105.77, 89.90, 0.00, 0.00, NULL, 'paid', NULL, '2026-05-12 07:52:12', '2026-05-13 12:07:16'),
+(45, 4, 5, 16, '2024-01-25 10:00:00', 'Paint living room walls', 'C-789, Dwarka, Delhi', 6, 'accepted', 2999.00, 149.95, 539.82, 3688.77, 299.90, 0.00, 0.00, NULL, 'pending', NULL, '2026-05-12 07:52:12', '2026-05-13 12:06:54');
 
 -- --------------------------------------------------------
 
@@ -81,36 +81,36 @@ CREATE TABLE `categories` (
 --
 
 INSERT INTO `categories` (`id`, `name`, `parent_id`, `image`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'Home Services', NULL, 'home-services.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(2, 'Plumbing', 1, 'plumbing.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(3, 'Electrical', 1, 'electrical.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(4, 'Cleaning', 1, 'cleaning.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(5, 'Carpentry', 1, 'carpentry.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(6, 'Painting', 1, 'painting.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(7, 'AC Repair', 1, 'ac-repair.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(8, 'Appliance Repair', 1, 'appliance.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(9, 'Beauty & Wellness', NULL, 'beauty.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(10, 'Salon at Home', 9, 'salon.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(11, 'Massage', 9, 'massage.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(12, 'Fitness', 9, 'fitness.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(13, 'Vehicle Services', NULL, 'vehicle.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(14, 'Car Wash', 13, 'car-wash.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(15, 'Bike Service', 13, 'bike-service.png', 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(16, 'Home Services', NULL, 'home-services.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(17, 'Plumbing', 1, 'plumbing.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(18, 'Electrical', 1, 'electrical.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(19, 'Cleaning', 1, 'cleaning.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(20, 'Carpentry', 1, 'carpentry.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(21, 'Painting', 1, 'painting.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(22, 'AC Repair', 1, 'ac-repair.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(23, 'Appliance Repair', 1, 'appliance.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(24, 'Beauty & Wellness', NULL, 'beauty.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(25, 'Salon at Home', 9, 'salon.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(26, 'Massage', 9, 'massage.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(27, 'Fitness', 9, 'fitness.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(28, 'Vehicle Services', NULL, 'vehicle.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(29, 'Car Wash', 13, 'car-wash.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34'),
-(30, 'Bike Service', 13, 'bike-service.png', 1, '2026-05-12 07:10:34', '2026-05-12 07:10:34');
+(1, 'Home Services', NULL, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:55:31'),
+(2, 'Plumbing', 1, '1778673388371-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:56:31'),
+(3, 'Electrical', 1, '1778673408602-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:56:51'),
+(4, 'Cleaning', 1, '1778673429936-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:57:12'),
+(5, 'Carpentry', 1, '1778673455116-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:57:38'),
+(6, 'Painting', 1, '1778673484674-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:58:07'),
+(7, 'AC Repair', 1, '1778673505176-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:58:28'),
+(8, 'Appliance Repair', 1, '1778673519006-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:58:41'),
+(9, 'Beauty & Wellness', NULL, '1778673533917-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:58:56'),
+(10, 'Salon at Home', 9, '1778673547026-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:59:09'),
+(11, 'Massage', 9, '1778673570041-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:59:32'),
+(12, 'Fitness', 9, '1778673587877-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:59:50'),
+(13, 'Vehicle Services', NULL, '1778673637395-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 12:00:40'),
+(14, 'Car Wash', 13, '1778673674385-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 12:01:17'),
+(15, 'Bike Service', 13, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 12:01:34'),
+(16, 'Home Services', NULL, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:37'),
+(17, 'Plumbing', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:39'),
+(18, 'Electrical', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:42'),
+(19, 'Cleaning', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:44'),
+(20, 'Carpentry', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:47'),
+(21, 'Painting', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:51'),
+(22, 'AC Repair', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:53'),
+(23, 'Appliance Repair', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:56'),
+(24, 'Beauty & Wellness', NULL, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:59'),
+(25, 'Salon at Home', 9, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:02'),
+(26, 'Massage', 9, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:22'),
+(27, 'Fitness', 9, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:25'),
+(28, 'Vehicle Services', NULL, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:28'),
+(29, 'Car Wash', 13, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:31'),
+(30, 'Bike Service', 13, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:34');
 
 -- --------------------------------------------------------
 
@@ -317,6 +317,32 @@ INSERT INTO `services` (`id`, `vendor_id`, `category_id`, `name`, `description`,
 (24, 7, 10, 'Manicure & Pedicure', 'Complete nail care service', 699.00, '1.5 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
 (25, 8, 14, 'Car Wash', 'External car washing and cleaning', 299.00, '30-45 min', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
 (26, 8, 14, 'Car Detailing', 'Complete interior and exterior detailing', 1299.00, '2-3 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `sliders`
+--
+
+CREATE TABLE `sliders` (
+  `id` int(11) NOT NULL,
+  `title` varchar(200) DEFAULT NULL,
+  `subtitle` varchar(300) DEFAULT NULL,
+  `image` varchar(255) NOT NULL,
+  `type` enum('user','vendor','both') NOT NULL DEFAULT 'both',
+  `link` varchar(500) DEFAULT NULL,
+  `sort_order` int(11) DEFAULT 0,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `sliders`
+--
+
+INSERT INTO `sliders` (`id`, `title`, `subtitle`, `image`, `type`, `link`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'BOOK NOW', 'its a very useful application', '1778668451036-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 'both', '', 1, 1, '2026-05-13 10:34:14', '2026-05-13 10:34:14');
 
 -- --------------------------------------------------------
 
@@ -640,6 +666,13 @@ ALTER TABLE `services`
   ADD KEY `category_id` (`category_id`);
 
 --
+-- Indexes for table `sliders`
+--
+ALTER TABLE `sliders`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_type_active` (`type`,`is_active`);
+
+--
 -- Indexes for table `subscription_plans`
 --
 ALTER TABLE `subscription_plans`
@@ -747,6 +780,12 @@ ALTER TABLE `reviews`
 --
 ALTER TABLE `services`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+
+--
+-- AUTO_INCREMENT for table `sliders`
+--
+ALTER TABLE `sliders`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `subscription_plans`
