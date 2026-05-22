@@ -1,58 +1,40 @@
 const router = require('express').Router();
 const authCtrl = require('../../controllers/user/auth.controller');
-const onboardingCtrl = require('../../controllers/vendor/onboarding.controller');
-const serviceCtrl = require('../../controllers/vendor/service.controller');
-const bookingCtrl = require('../../controllers/vendor/booking.controller');
+const vendorCtrl = require('../../controllers/vendor/vendor.controller');
 const sliderCtrl = require('../../controllers/admin/slider.controller');
-const { authenticate, authorize, requireApprovedVendor } = require('../../middlewares/auth.middleware');
+const { authenticate, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
 
-// ─── Sliders ──────────────────────────────────────────────────────────────────
-router.get('/sliders', authenticate, authorize('vendor'), sliderCtrl.getSliders);
+const auth = [authenticate, authorize('vendor')];
 
-// ─── Auth (Vendor-specific) ──────────────────────────────────────────────────
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 router.post('/auth/send-otp', authCtrl.vendorSendOtp);
 router.post('/auth/verify-otp', authCtrl.vendorVerifyOtp);
 
-// ─── Onboarding (No approval needed - this IS the onboarding) ────────────────
-router.get('/onboarding/status', authenticate, authorize('vendor'), onboardingCtrl.getOnboardingStatus);
+// ─── Sliders ──────────────────────────────────────────────────────────────────
+router.get('/sliders', ...auth, sliderCtrl.getSliders);
 
-// Profile
-router.get('/onboarding/profile', authenticate, authorize('vendor'), onboardingCtrl.getProfile);
-router.post('/onboarding/profile', authenticate, authorize('vendor'),
-  upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }]),
-  onboardingCtrl.saveProfile
-);
+// ─── Categories ───────────────────────────────────────────────────────────────
+router.get('/categories', ...auth, vendorCtrl.getCategories);
+router.post('/categories', ...auth, upload.single('image'), vendorCtrl.createCategory);
+router.put('/categories/:id', ...auth, upload.single('image'), vendorCtrl.updateCategory);
+router.delete('/categories/:id', ...auth, vendorCtrl.deleteCategory);
 
-// KYC
-router.get('/onboarding/kyc', authenticate, authorize('vendor'), onboardingCtrl.getKyc);
-router.post('/onboarding/kyc', authenticate, authorize('vendor'),
-  upload.fields([
-    { name: 'aadhaar_front', maxCount: 1 },
-    { name: 'aadhaar_back', maxCount: 1 },
-    { name: 'pan_document', maxCount: 1 },
-    { name: 'gst_document', maxCount: 1 },
-    { name: 'selfie', maxCount: 1 },
-  ]),
-  onboardingCtrl.saveKyc
-);
+// ─── Services ─────────────────────────────────────────────────────────────────
+router.get('/services', ...auth, vendorCtrl.getServices);
+router.post('/services', ...auth, upload.array('images', 10), vendorCtrl.createService);
+router.put('/services/:id', ...auth, upload.array('images', 10), vendorCtrl.updateService);
+router.delete('/services/:id', ...auth, vendorCtrl.deleteService);
 
-// Bank
-router.get('/onboarding/bank', authenticate, authorize('vendor'), onboardingCtrl.getBankDetails);
-router.post('/onboarding/bank', authenticate, authorize('vendor'),
-  upload.single('passbook_image'),
-  onboardingCtrl.saveBankDetails
-);
+// ─── Bookings ─────────────────────────────────────────────────────────────────
+router.get('/bookings', ...auth, vendorCtrl.getBookings);
+router.patch('/bookings/:id/status', ...auth, vendorCtrl.updateBookingStatus);
+router.patch('/bookings/:id/assign-worker', ...auth, vendorCtrl.assignWorker);
 
-// ─── Services (Only approved + KYC verified vendors) ─────────────────────────
-router.get('/services', authenticate, authorize('vendor'), requireApprovedVendor, serviceCtrl.getMyServices);
-router.get('/services/:id', authenticate, authorize('vendor'), requireApprovedVendor, serviceCtrl.getService);
-router.post('/services', authenticate, authorize('vendor'), requireApprovedVendor, upload.array('images', 10), serviceCtrl.addService);
-router.put('/services/:id', authenticate, authorize('vendor'), requireApprovedVendor, upload.array('images', 10), serviceCtrl.updateService);
-router.delete('/services/:id', authenticate, authorize('vendor'), requireApprovedVendor, serviceCtrl.deleteService);
-
-// ─── Bookings (Only approved + KYC verified vendors) ─────────────────────────
-router.get('/bookings', authenticate, authorize('vendor'), requireApprovedVendor, bookingCtrl.getVendorBookings);
-router.patch('/bookings/:id/status', authenticate, authorize('vendor'), requireApprovedVendor, bookingCtrl.updateBookingStatus);
+// ─── Workers ──────────────────────────────────────────────────────────────────
+router.get('/workers', ...auth, vendorCtrl.getWorkers);
+router.post('/workers', ...auth, upload.fields([{ name: 'aadhaar_front', maxCount: 1 }, { name: 'aadhaar_back', maxCount: 1 }]), vendorCtrl.createWorker);
+router.put('/workers/:id', ...auth, upload.fields([{ name: 'aadhaar_front', maxCount: 1 }, { name: 'aadhaar_back', maxCount: 1 }]), vendorCtrl.updateWorker);
+router.delete('/workers/:id', ...auth, vendorCtrl.deleteWorker);
 
 module.exports = router;

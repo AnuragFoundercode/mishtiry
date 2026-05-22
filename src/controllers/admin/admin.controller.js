@@ -1,3 +1,4 @@
+const bcrypt = require('bcryptjs');
 const User = require('../../models/user.model');
 const Vendor = require('../../models/vendor.model');
 const VendorKyc = require('../../models/vendor_kyc.model');
@@ -13,6 +14,38 @@ const { sendPushNotification } = require('../../helpers/notification.helper');
 const { getSettings } = require('../../helpers/pricing.helper');
 const { success, error } = require('../../helpers/response.helper');
 const sequelize = require('../../config/database');
+
+/**
+ * POST /api/admin/vendors
+ * Admin creates a vendor directly (single-vendor mode)
+ * Body: { name, mobile, email, password, business_name, description, address, latitude, longitude }
+ */
+const createVendor = async (req, res) => {
+  try {
+    const { name, mobile, email, password, business_name, description, address, latitude, longitude } = req.body;
+    if (!mobile || !business_name) return error(res, 'Mobile and business_name are required', 400);
+
+    const existing = await User.findOne({ where: { mobile } });
+    if (existing) return error(res, 'Mobile already registered', 409);
+
+    const hashed = password ? await bcrypt.hash(password, 10) : null;
+    const user = await User.create({ name, mobile, email, password: hashed, role: 'vendor' });
+
+    const vendor = await Vendor.create({
+      user_id: user.id,
+      business_name, description, address, latitude, longitude,
+      is_approved: true,
+      kyc_status: 'approved',
+    });
+
+    return success(res, {
+      user: { id: user.id, mobile: user.mobile, role: user.role },
+      vendor: { id: vendor.id, business_name: vendor.business_name, is_approved: vendor.is_approved },
+    }, 'Vendor created successfully', 201);
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
 
 const getDashboard = async (req, res) => {
   try {
@@ -347,4 +380,5 @@ module.exports = {
   getVendorKyc, reviewVendorKyc,
   getPolicies, createPolicy, updatePolicy, deletePolicy,
   getZones, createZone, updateZone, deleteZone,
+  createVendor,
 };

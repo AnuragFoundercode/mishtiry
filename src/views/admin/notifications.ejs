@@ -28,22 +28,12 @@
               <i class="bi bi-bullseye text-primary me-2"></i>Target Audience
             </label>
             <select name="target_type" class="form-select" id="targetType" onchange="handleTargetChange(this.value)" required>
-              <option value="all">
-                <i class="bi bi-people"></i> Everyone (Users + Vendors)
-              </option>
-              <option value="all_users">
-                <i class="bi bi-person"></i> All Users Only
-              </option>
-              <option value="all_vendors">
-                <i class="bi bi-shop"></i> All Vendors Only
-              </option>
-              <option value="specific">
-                <i class="bi bi-bullseye"></i> Specific People
-              </option>
+              <option value="all_users">All Users</option>
+              <option value="specific">Specific Users</option>
             </select>
           </div>
 
-          <!-- Specific selection (hidden by default) -->
+          <!-- Specific selection -->
           <div id="specificSection" style="display:none" class="mb-3">
             <label class="form-label fw-medium">Select Recipients</label>
             <div class="border rounded-3 p-3" style="max-height:260px;overflow-y:auto;background:#fafafe">
@@ -52,39 +42,20 @@
                   <span class="input-group-text bg-light border-end-0">
                     <i class="bi bi-search text-muted"></i>
                   </span>
-                  <input type="text" class="form-control border-start-0" placeholder="Search recipients..." oninput="filterRecipients(this.value)"/>
+                  <input type="text" class="form-control border-start-0" placeholder="Search users..." oninput="filterRecipients(this.value)"/>
                 </div>
               </div>
               <div class="mb-2">
-                <button type="button" class="btn btn-xs btn-outline-primary btn-sm me-1" onclick="selectAll()">Select All</button>
-                <button type="button" class="btn btn-xs btn-outline-secondary btn-sm" onclick="clearAll()">Clear</button>
+                <button type="button" class="btn btn-outline-primary btn-sm me-1" onclick="selectAll()">Select All</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearAll()">Clear</button>
               </div>
               <div id="recipientList">
-                <div class="fw-semibold small text-muted mb-2 mt-3 d-flex align-items-center gap-1">
-                  <i class="bi bi-person-fill"></i>Users
-                </div>
                 <% allUsers.forEach(u => { %>
                   <div class="recipient-item form-check py-1 border-bottom">
                     <input class="form-check-input recipient-cb" type="checkbox" value="<%= u.id %>" id="u<%= u.id %>"/>
                     <label class="form-check-label small" for="u<%= u.id %>">
-                      <strong><%= u.name||'Unknown' %></strong> 
-                      <span class="text-muted">
-                        <i class="bi bi-phone me-1" style="font-size:10px;"></i><%= u.mobile %>
-                      </span>
-                    </label>
-                  </div>
-                <% }) %>
-                <div class="fw-semibold small text-muted mb-2 mt-3 d-flex align-items-center gap-1">
-                  <i class="bi bi-shop"></i>Vendors
-                </div>
-                <% allVendors.forEach(v => { %>
-                  <div class="recipient-item form-check py-1 border-bottom">
-                    <input class="form-check-input recipient-cb" type="checkbox" value="<%= v.User?.id||'' %>" id="v<%= v.id %>"/>
-                    <label class="form-check-label small" for="v<%= v.id %>">
-                      <strong><%= v.business_name||'—' %></strong> 
-                      <span class="text-muted">
-                        <i class="bi bi-phone me-1" style="font-size:10px;"></i><%= v.User?.mobile %>
-                      </span>
+                      <strong><%= u.name||'Unknown' %></strong>
+                      <span class="text-muted"><i class="bi bi-phone me-1" style="font-size:10px;"></i><%= u.mobile %></span>
                     </label>
                   </div>
                 <% }) %>
@@ -123,39 +94,17 @@
       </div>
       <div class="card-body">
         <div class="d-flex gap-3 mb-3 p-3 rounded-3 bg-primary bg-opacity-10">
-          <div class="text-primary">
-            <i class="bi bi-people" style="font-size:1.5rem;"></i>
-          </div>
-          <div>
-            <strong class="small text-dark">Everyone</strong>
-            <p class="text-muted small mb-0">Sends to all users and vendors on the platform</p>
-          </div>
-        </div>
-        <div class="d-flex gap-3 mb-3 p-3 rounded-3 bg-success bg-opacity-10">
-          <div class="text-success">
-            <i class="bi bi-person" style="font-size:1.5rem;"></i>
-          </div>
+          <div class="text-primary"><i class="bi bi-people" style="font-size:1.5rem;"></i></div>
           <div>
             <strong class="small text-dark">All Users</strong>
-            <p class="text-muted small mb-0">Only sends to customers (not vendors)</p>
-          </div>
-        </div>
-        <div class="d-flex gap-3 mb-3 p-3 rounded-3 bg-warning bg-opacity-10">
-          <div class="text-warning">
-            <i class="bi bi-shop" style="font-size:1.5rem;"></i>
-          </div>
-          <div>
-            <strong class="small text-dark">All Vendors</strong>
-            <p class="text-muted small mb-0">Only sends to approved vendors</p>
+            <p class="text-muted small mb-0">Sends to all registered customers</p>
           </div>
         </div>
         <div class="d-flex gap-3 p-3 rounded-3 bg-info bg-opacity-10">
-          <div class="text-info">
-            <i class="bi bi-bullseye" style="font-size:1.5rem;"></i>
-          </div>
+          <div class="text-info"><i class="bi bi-bullseye" style="font-size:1.5rem;"></i></div>
           <div>
-            <strong class="small text-dark">Specific People</strong>
-            <p class="text-muted small mb-0">Hand-pick individual users or vendors from the list</p>
+            <strong class="small text-dark">Specific Users</strong>
+            <p class="text-muted small mb-0">Hand-pick individual users from the list</p>
           </div>
         </div>
       </div>

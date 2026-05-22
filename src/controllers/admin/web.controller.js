@@ -1,10 +1,8 @@
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const {
-  User, Vendor, VendorKyc, VendorBankDetail,
-  Booking, Category, Service, Notification,
-  Policy, Zone,
-  SubscriptionPlan, VendorSubscription,
+  User, Booking, Category, Service, Notification,
+  Policy, Zone, Worker,
 } = require('../../models/index');
 const PlatformSetting = require('../../models/platform_setting.model');
 const { sendEmailNotification } = require('../../helpers/notification.helper');
@@ -74,23 +72,22 @@ const doResetPassword = async (req, res) => {
 
 const dashboard = async (req, res) => {
   try {
-    const [totalUsers, totalVendors, totalBookings, pendingKyc, pendingBookings] = await Promise.all([
+    const [totalUsers, totalWorkers, totalBookings, pendingBookings] = await Promise.all([
       User.count({ where: { role: 'user' } }),
-      Vendor.count(),
+      Worker.count(),
       Booking.count(),
-      Vendor.count({ where: { kyc_status: 'under_review' } }),
       Booking.count({ where: { status: 'pending' } }),
     ]);
-    const totalRevenue = await Booking.sum('commission_amount', { where: { payment_status: 'paid' } }) || 0;
+    const totalRevenue = await Booking.sum('total_amount', { where: { payment_status: 'paid' } }) || 0;
     const platformRevenue = await Booking.sum('platform_charge', { where: { payment_status: 'paid' } }) || 0;
     const gstCollected = await Booking.sum('gst_amount', { where: { payment_status: 'paid' } }) || 0;
     const recentBookings = await Booking.findAll({
       limit: 5, order: [['created_at', 'DESC']],
       include: [{ model: User, attributes: ['name', 'mobile'] }, { model: Service, attributes: ['name'] }],
     });
-    const recentVendors = await Vendor.findAll({
+    const recentWorkers = await Worker.findAll({
       limit: 5, order: [['created_at', 'DESC']],
-      include: [{ model: User, attributes: ['name', 'mobile'] }],
+      attributes: ['id', 'name', 'phone', 'is_active'],
     });
 
     // Chart 1: last 6 months booking trend
@@ -134,8 +131,8 @@ const dashboard = async (req, res) => {
 
     res.render('admin/dashboard', {
       title: 'Dashboard', page: 'dashboard',
-      totalUsers, totalVendors, totalBookings, pendingKyc, pendingBookings,
-      totalRevenue, platformRevenue, gstCollected, recentBookings, recentVendors,
+      totalUsers, totalWorkers, totalBookings, pendingBookings,
+      totalRevenue, platformRevenue, gstCollected, recentBookings, recentWorkers,
       monthLabels, monthCounts, monthRevenue,
       statusLabels, statusCounts,
       adminName: req.session.adminName,
@@ -144,7 +141,6 @@ const dashboard = async (req, res) => {
 };
 
 // ─── Users ────────────────────────────────────────────────────────────────────
-
 const users = async (req, res) => {
   try {
     const { search = '', page = 1 } = req.query;
@@ -170,15 +166,11 @@ const userDetail = async (req, res) => {
     const bookings = await Booking.findAll({
       where: { user_id: user.id },
       order: [['created_at', 'DESC']],
-      include: [
-        { model: Vendor, attributes: ['business_name'] },
-        { model: Service, attributes: ['name'] },
-      ],
+      include: [{ model: Service, attributes: ['name'] }],
     });
     const reviews = await Review.findAll({
       where: { user_id: user.id },
       order: [['created_at', 'DESC']],
-      include: [{ model: Vendor, attributes: ['business_name'] }],
     });
     const totalSpend = bookings.filter(b => b.payment_status === 'paid').reduce((s, b) => s + parseFloat(b.total_amount || 0), 0);
     res.render('admin/user-detail', {
@@ -188,248 +180,6 @@ const userDetail = async (req, res) => {
       success: req.flash('success'), error: req.flash('error'),
     });
   } catch (e) { res.render('admin/error', { message: e.message }); }
-};
-
-// ─── Vendors ──────────────────────────────────────────────────────────────────
-
-const createVendor = async (req, res) => {
-  try {
-    const { name, mobile, email, business_name, description, address, latitude, longitude } = req.body;
-    if (!mobile || !business_name) { req.flash('error', 'Mobile and business name are required'); return res.redirect('/admin/vendors'); }
-
-    const existing = await User.findOne({ where: { mobile } });
-    if (existing) { req.flash('error', 'Mobile number already registered'); return res.redirect('/admin/vendors'); }
-
-    const user = await User.create({ name: name || null, mobile, email: email || null, role: 'vendor' });
-    const logo   = req.files?.logo?.[0]?.filename   || null;
-    const banner = req.files?.banner?.[0]?.filename || null;
-    await Vendor.create({ user_id: user.id, business_name, description: description || null, address: address || null, latitude: latitude || null, longitude: longitude || null, logo, banner });
-
-    req.flash('success', `Vendor "${business_name}" created successfully`);
-    res.redirect('/admin/vendors');
-  } catch (e) { req.flash('error', e.message); res.redirect('/admin/vendors'); }
-};
-
-const updateVendorProfile = async (req, res) => {
-  try {
-    const vendor = await Vendor.findByPk(req.params.id, { include: [{ model: User }] });
-    if (!vendor) { req.flash('error', 'Vendor not found'); return res.redirect('/admin/vendors'); }
-
-    const { name, email, business_name, description, address, latitude, longitude, working_hours } = req.body;
-    const logo   = req.files?.logo?.[0]?.filename   || null;
-    const banner = req.files?.banner?.[0]?.filename || null;
-
-    // Update user info
-    await vendor.User.update({
-      ...(name  !== undefined && { name:  name  || null }),
-      ...(email !== undefined && { email: email || null }),
-    });
-
-    // Parse working_hours
-    let parsedHours = vendor.working_hours;
-    if (working_hours) {
-      try { parsedHours = typeof working_hours === 'string' ? JSON.parse(working_hours) : working_hours; }
-      catch { req.flash('error', 'working_hours must be valid JSON'); return res.redirect(`/admin/vendors/${req.params.id}`); }
-    }
-
-    await vendor.update({
-      ...(business_name !== undefined && { business_name }),
-      ...(description   !== undefined && { description: description || null }),
-      ...(address       !== undefined && { address: address || null }),
-      ...(latitude      !== undefined && { latitude: latitude || null }),
-      ...(longitude     !== undefined && { longitude: longitude || null }),
-      working_hours: parsedHours,
-      ...(logo   && { logo }),
-      ...(banner && { banner }),
-    });
-
-    req.flash('success', 'Vendor profile updated');
-    res.redirect(`/admin/vendors/${req.params.id}`);
-  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/vendors/${req.params.id}`); }
-};
-
-const vendors = async (req, res) => {
-  try {
-    const { search = '', status = '', page = 1 } = req.query;
-    const limit = 15, offset = (page - 1) * limit;
-    const where = {};
-    if (status === 'pending_kyc') where.kyc_status = 'under_review';
-    if (status === 'approved') where.is_approved = true;
-    if (status === 'suspended') where.is_suspended = true;
-    if (status === 'featured') where.is_featured = true;
-    const { count, rows } = await Vendor.findAndCountAll({
-      where, limit, offset, order: [['created_at', 'DESC']],
-      include: [{ model: User, attributes: ['name', 'mobile', 'email'] }],
-    });
-    res.render('admin/vendors', { title: 'Vendors', page: 'vendors', vendors: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), search, status, adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error') });
-  } catch (e) { res.render('admin/error', { message: e.message }); }
-};
-
-const vendorDetail = async (req, res) => {
-  try {
-    const vendor = await Vendor.findByPk(req.params.id, {
-      include: [
-        { model: User, attributes: ['name', 'mobile', 'email'] },
-        { model: VendorKyc },
-        { model: VendorBankDetail },
-      ],
-    });
-    if (!vendor) { req.flash('error', 'Vendor not found'); return res.redirect('/admin/vendors'); }
-    const settings = await getSettings();
-    const plans = await SubscriptionPlan.findAll({ where: { is_active: true } });
-    const allZones = await Zone.findAll({ where: { is_active: true }, order: [['created_at', 'DESC']] });
-    const activeSub = await VendorSubscription.findOne({
-      where: { vendor_id: vendor.id, status: 'active' },
-      include: [{ model: SubscriptionPlan }],
-    });
-    const subHistory = await VendorSubscription.findAll({
-      where: { vendor_id: vendor.id },
-      include: [{ model: SubscriptionPlan }],
-      order: [['created_at', 'DESC']],
-      limit: 5,
-    });
-    const totalEarnings = await Booking.sum('vendor_payout', { where: { vendor_id: vendor.id, payment_status: 'paid' } }) || 0;
-    const totalBookings = await Booking.count({ where: { vendor_id: vendor.id } });
-    res.render('admin/vendor-detail', {
-      title: vendor.business_name || 'Vendor Detail', page: 'vendors',
-      vendor, settings, plans, allZones, activeSub, subHistory, totalEarnings, totalBookings,
-      adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error'),
-    });
-  } catch (e) { res.render('admin/error', { message: e.message }); }
-};
-
-const updateVendorKyc = async (req, res) => {
-  const { status, rejection_reason } = req.body;
-  const vendor = await Vendor.findByPk(req.params.id);
-  if (vendor) await vendor.update({ kyc_status: status, kyc_rejection_reason: rejection_reason || null, ...(status === 'approved' && { is_approved: true }) });
-  req.flash('success', `KYC ${status}`);
-  res.redirect(`/admin/vendors/${req.params.id}`);
-};
-
-const updateVendorPricing = async (req, res) => {
-  const { revenue_model, commission_percent } = req.body;
-  const vendor = await Vendor.findByPk(req.params.id);
-  if (vendor) await vendor.update({
-    revenue_model: revenue_model || null,
-    commission_percent: commission_percent !== '' ? commission_percent : null,
-  });
-  req.flash('success', 'Pricing updated');
-  res.redirect(`/admin/vendors/${req.params.id}`);
-};
-
-const toggleSuspendVendor = async (req, res) => {
-  const vendor = await Vendor.findByPk(req.params.id);
-  if (vendor) await vendor.update({ is_suspended: !vendor.is_suspended });
-  req.flash('success', `Vendor ${vendor.is_suspended ? 'suspended' : 'unsuspended'}`);
-  res.redirect(`/admin/vendors/${req.params.id}`);
-};
-
-const toggleFeaturedVendor = async (req, res) => {
-  const vendor = await Vendor.findByPk(req.params.id);
-  if (vendor) await vendor.update({ is_featured: !vendor.is_featured });
-  req.flash('success', `Vendor ${vendor.is_featured ? 'marked featured' : 'removed from featured'}`);
-  res.redirect(`/admin/vendors/${req.params.id}`);
-};
-
-// Assign subscription to vendor manually
-const assignVendorSubscription = async (req, res) => {
-  try {
-    const { plan_id, billing_cycle, months } = req.body;
-    const vendor = await Vendor.findByPk(req.params.id);
-    if (!vendor) { req.flash('error', 'Vendor not found'); return res.redirect(`/admin/vendors/${req.params.id}`); }
-    // Cancel existing active sub
-    await VendorSubscription.update({ status: 'cancelled' }, { where: { vendor_id: vendor.id, status: 'active' } });
-    const duration = parseInt(months) || (billing_cycle === 'yearly' ? 12 : 1);
-    const starts_at = new Date();
-    const expires_at = new Date();
-    expires_at.setMonth(expires_at.getMonth() + duration);
-    await VendorSubscription.create({ vendor_id: vendor.id, plan_id, billing_cycle, starts_at, expires_at, status: 'active' });
-    req.flash('success', 'Subscription assigned successfully');
-    res.redirect(`/admin/vendors/${req.params.id}`);
-  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/vendors/${req.params.id}`); }
-};
-
-const cancelVendorSubscription = async (req, res) => {
-  await VendorSubscription.update({ status: 'cancelled' }, { where: { id: req.params.subId, vendor_id: req.params.id } });
-  req.flash('success', 'Subscription cancelled');
-  res.redirect(`/admin/vendors/${req.params.id}`);
-};
-
-// ─── Subscription Plans ───────────────────────────────────────────────────────
-
-const subscriptionPlans = async (req, res) => {
-  try {
-    const plans = await SubscriptionPlan.findAll({ order: [['id', 'ASC']] });
-
-    // Stats per plan: total subscriptions, active count
-    const planStats = await VendorSubscription.findAll({
-      attributes: [
-        'plan_id',
-        'status',
-        [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
-      ],
-      group: ['plan_id', 'status'],
-      raw: true,
-    });
-
-    // Active vendor subscriptions with vendor + plan details
-    const now = new Date();
-    const activeSubscriptions = await VendorSubscription.findAll({
-      where: { status: 'active' },
-      order: [['expires_at', 'ASC']],
-      include: [
-        { model: Vendor, attributes: ['id', 'business_name'], include: [{ model: User, attributes: ['name', 'mobile'] }] },
-        { model: SubscriptionPlan, attributes: ['name', 'price_monthly', 'price_yearly'] },
-      ],
-    });
-
-    // Expiring soon (within 7 days, but not already expired)
-    const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    const expiringSoon = activeSubscriptions.filter(s => {
-      const exp = new Date(s.expires_at);
-      return exp > now && exp <= soon;
-    });
-
-    // Overall stats
-    const totalRevenue = await VendorSubscription.findAll({
-      attributes: [[sequelize.fn('COUNT', sequelize.col('id')), 'total']],
-      raw: true,
-    });
-    const activeSubs  = await VendorSubscription.count({ where: { status: 'active' } });
-    const expiredSubs = await VendorSubscription.count({ where: { status: 'expired' } });
-    const cancelledSubs = await VendorSubscription.count({ where: { status: 'cancelled' } });
-
-    res.render('admin/subscriptions', {
-      title: 'Subscription Plans', page: 'subscriptions',
-      plans, planStats, activeSubscriptions, expiringSoon,
-      activeSubs, expiredSubs, cancelledSubs,
-      adminName: req.session.adminName,
-      success: req.flash('success'), error: req.flash('error'),
-    });
-  } catch (e) { res.render('admin/error', { message: e.message }); }
-};
-
-const createPlan = async (req, res) => {
-  try {
-    await SubscriptionPlan.create(req.body);
-    req.flash('success', 'Plan created');
-    res.redirect('/admin/subscriptions');
-  } catch (e) { req.flash('error', e.message); res.redirect('/admin/subscriptions'); }
-};
-
-const updatePlan = async (req, res) => {
-  try {
-    await SubscriptionPlan.update(req.body, { where: { id: req.params.id } });
-    req.flash('success', 'Plan updated');
-    res.redirect('/admin/subscriptions');
-  } catch (e) { req.flash('error', e.message); res.redirect('/admin/subscriptions'); }
-};
-
-const togglePlan = async (req, res) => {
-  const plan = await SubscriptionPlan.findByPk(req.params.id);
-  if (plan) await plan.update({ is_active: !plan.is_active });
-  req.flash('success', 'Plan status updated');
-  res.redirect('/admin/subscriptions');
 };
 
 // ─── Categories ───────────────────────────────────────────────────────────────
@@ -477,27 +227,23 @@ const deleteCategory = async (req, res) => {
 
 const services = async (req, res) => {
   try {
-    const { search = '', vendor_id = '', page = 1 } = req.query;
+    const { search = '', page = 1 } = req.query;
     const limit = 15, offset = (page - 1) * limit;
     const where = {};
     if (search) where.name = { [Op.like]: `%${search}%` };
-    if (vendor_id) where.vendor_id = vendor_id;
     const { count, rows } = await Service.findAndCountAll({
       where, limit, offset, order: [['created_at', 'DESC']],
-      include: [{ model: Vendor, attributes: ['id', 'business_name'] }, { model: Category, attributes: ['name'] }],
+      include: [{ model: Category, attributes: ['name'] }],
     });
-    const allVendors = await Vendor.findAll({ attributes: ['id', 'business_name'], order: [['business_name', 'ASC']] });
-    res.render('admin/services', { title: 'Services', page: 'services', services: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), search, vendor_id, allVendors, adminName: req.session.adminName, success: req.flash('success') });
+    const allCategories = await Category.findAll({ where: { is_active: true }, order: [['name', 'ASC']], attributes: ['id', 'name'] });
+    res.render('admin/services', { title: 'Services', page: 'services', services: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), search, allCategories, adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error') });
   } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
 const serviceDetail = async (req, res) => {
   try {
     const service = await Service.findByPk(req.params.id, {
-      include: [
-        { model: Vendor, attributes: ['id', 'business_name', 'address', 'avg_rating'] },
-        { model: Category, attributes: ['name'] },
-      ],
+      include: [{ model: Category, attributes: ['name'] }],
     });
     if (!service) { req.flash('error', 'Service not found'); return res.redirect('/admin/services'); }
 
@@ -528,6 +274,37 @@ const toggleService = async (req, res) => {
   res.redirect(ref);
 };
 
+const createService = async (req, res) => {
+  try {
+    const { category_id, name, description, price, estimated_time } = req.body;
+    if (!category_id || !name || !price) { req.flash('error', 'Category, name and price are required'); return res.redirect('/admin/services'); }
+    const images = req.files?.map(f => f.filename) || [];
+    await Service.create({ category_id, name, description: description || null, price, estimated_time: estimated_time || null, images });
+    req.flash('success', `Service "${name}" created`);
+    res.redirect('/admin/services');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/services'); }
+};
+
+const updateService = async (req, res) => {
+  try {
+    const svc = await Service.findByPk(req.params.id);
+    if (!svc) { req.flash('error', 'Service not found'); return res.redirect('/admin/services'); }
+    const { category_id, name, description, price, estimated_time, is_active } = req.body;
+    const newImages = req.files?.map(f => f.filename);
+    await svc.update({
+      ...(category_id && { category_id }),
+      ...(name && { name }),
+      ...(description !== undefined && { description }),
+      ...(price && { price }),
+      ...(estimated_time !== undefined && { estimated_time }),
+      ...(is_active !== undefined && { is_active: is_active === '1' }),
+      ...(newImages?.length && { images: newImages }),
+    });
+    req.flash('success', 'Service updated');
+    res.redirect('/admin/services');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/services'); }
+};
+
 // ─── Bookings ─────────────────────────────────────────────────────────────────
 
 const bookingDetail = async (req, res) => {
@@ -536,8 +313,8 @@ const bookingDetail = async (req, res) => {
     const booking = await Booking.findByPk(req.params.id, {
       include: [
         { model: User, attributes: ['name', 'mobile', 'email'] },
-        { model: Vendor, attributes: ['business_name', 'address'] },
         { model: Service, attributes: ['name', 'description', 'estimated_time'] },
+        { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
       ],
     });
     if (!booking) { req.flash('error', 'Booking not found'); return res.redirect('/admin/bookings'); }
@@ -545,14 +322,14 @@ const bookingDetail = async (req, res) => {
       where: { booking_id: booking.id },
       order: [['created_at', 'ASC']],
     });
-    // Attach sender names
     const userIds = [...new Set(messages.map(m => m.sender_id))];
     const senders = await User.findAll({ where: { id: userIds }, attributes: ['id', 'name', 'role'] });
     const senderMap = {};
     senders.forEach(s => { senderMap[s.id] = s; });
+    const availableWorkers = await Worker.findAll({ where: { is_active: true, is_blocked: false }, attributes: ['id', 'name', 'phone'], order: [['name', 'ASC']] });
     res.render('admin/booking-detail', {
       title: `Booking #${booking.id}`, page: 'bookings',
-      booking, messages, senderMap,
+      booking, messages, senderMap, availableWorkers,
       adminName: req.session.adminName,
       success: req.flash('success'), error: req.flash('error'),
     });
@@ -577,9 +354,7 @@ const bookings = async (req, res) => {
     const { status = '', search = '', page = 1 } = req.query;
     const limit = 15, offset = (page - 1) * limit;
     const where = status ? { status } : {};
-    if (search && /^\d+$/.test(search.trim())) {
-      where.id = search.trim();
-    }
+    if (search && /^\d+$/.test(search.trim())) where.id = search.trim();
     const userWhere = search && !/^\d+$/.test(search.trim())
       ? { [Op.or]: [{ name: { [Op.like]: `%${search}%` } }, { mobile: { [Op.like]: `%${search}%` } }] }
       : undefined;
@@ -587,7 +362,6 @@ const bookings = async (req, res) => {
       where, limit, offset, order: [['created_at', 'DESC']],
       include: [
         { model: User, attributes: ['name', 'mobile'], ...(userWhere && { where: userWhere, required: true }) },
-        { model: Vendor, attributes: ['business_name'] },
         { model: Service, attributes: ['name'] },
       ],
     });
@@ -604,23 +378,18 @@ const revenue = async (req, res) => {
     if (date_from) dateWhere.created_at = { ...dateWhere.created_at, [Op.gte]: new Date(date_from) };
     if (date_to)   dateWhere.created_at = { ...dateWhere.created_at, [Op.lte]: new Date(date_to + ' 23:59:59') };
 
-    const [totalCommission, totalPlatformCharge, totalGst] = await Promise.all([
-      Booking.sum('commission_amount', { where: dateWhere }),
-      Booking.sum('platform_charge',   { where: dateWhere }),
-      Booking.sum('gst_amount',        { where: dateWhere }),
+    const [totalPlatformCharge, totalGst] = await Promise.all([
+      Booking.sum('platform_charge', { where: dateWhere }),
+      Booking.sum('gst_amount',      { where: dateWhere }),
     ]);
-    const totalRevenue = (totalCommission || 0) + (totalPlatformCharge || 0) + (totalGst || 0);
+    const totalRevenue = (totalPlatformCharge || 0) + (totalGst || 0);
 
-    const byModel = await Booking.findAll({
-      attributes: ['revenue_model_applied', [sequelize.fn('SUM', sequelize.col('commission_amount')), 'total'], [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
-      where: dateWhere, group: ['revenue_model_applied'], raw: true,
-    });
     const recentPaid = await Booking.findAll({
       where: dateWhere, limit: 20, order: [['updated_at', 'DESC']],
-      include: [{ model: User, attributes: ['name'] }, { model: Vendor, attributes: ['business_name'] }, { model: Service, attributes: ['name'] }],
+      include: [{ model: User, attributes: ['name'] }, { model: Service, attributes: ['name'] }],
     });
     const settings = await getSettings();
-    res.render('admin/revenue', { title: 'Revenue', page: 'revenue', totalCommission: totalCommission || 0, totalPlatformCharge: totalPlatformCharge || 0, totalGst: totalGst || 0, totalRevenue, byModel, recentPaid, settings, date_from, date_to, adminName: req.session.adminName, success: req.flash('success') });
+    res.render('admin/revenue', { title: 'Revenue', page: 'revenue', totalPlatformCharge: totalPlatformCharge || 0, totalGst: totalGst || 0, totalRevenue, recentPaid, settings, date_from, date_to, adminName: req.session.adminName, success: req.flash('success') });
   } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
@@ -647,13 +416,7 @@ const updatePlatformSettings = async (req, res) => {
 const notifications = async (req, res) => {
   try {
     const allUsers = await User.findAll({ where: { role: 'user', is_blocked: false }, attributes: ['id', 'name', 'mobile'], order: [['name', 'ASC']] });
-    const allVendors = await Vendor.findAll({
-      where: { is_approved: true },
-      attributes: ['id', 'business_name'],
-      include: [{ model: User, attributes: ['name', 'mobile'] }],
-      order: [['business_name', 'ASC']],
-    });
-    res.render('admin/notifications', { title: 'Notifications', page: 'notifications', allUsers, allVendors, adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error') });
+    res.render('admin/notifications', { title: 'Notifications', page: 'notifications', allUsers, adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error') });
   } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
@@ -662,17 +425,10 @@ const sendNotification = async (req, res) => {
     const { title, body, target_type, specific_ids } = req.body;
     let userIds = [];
 
-    if (target_type === 'all') {
-      const all = await User.findAll({ attributes: ['id'] });
-      userIds = all.map(u => u.id);
-    } else if (target_type === 'all_users') {
+    if (target_type === 'all_users' || target_type === 'all') {
       const all = await User.findAll({ where: { role: 'user' }, attributes: ['id'] });
       userIds = all.map(u => u.id);
-    } else if (target_type === 'all_vendors') {
-      const all = await User.findAll({ where: { role: 'vendor' }, attributes: ['id'] });
-      userIds = all.map(u => u.id);
     } else if (target_type === 'specific') {
-      // specific_ids is comma-separated user ids
       userIds = (specific_ids || '').split(',').map(id => parseInt(id.trim())).filter(Boolean);
     }
 
@@ -785,90 +541,93 @@ const deleteZone = async (req, res) => {
   } catch (e) { req.flash('error', e.message); res.redirect('/admin/zones'); }
 };
 
-// ─── Subscription Renewal Notification ──────────────────────────────────────
 
-const sendRenewalNotification = async (req, res) => {
+// ─── Workers ─────────────────────────────────────────────────────────────────
+
+const workers = async (req, res) => {
   try {
-    const { vendor_id, type } = req.body; // type: 'single' | 'expiring' | 'expired'
-    const { sendPushNotification } = require('../../helpers/notification.helper');
-    const now = new Date();
-    const soon = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    let subscriptions = [];
-
-    if (type === 'single' && vendor_id) {
-      // Single vendor notification
-      subscriptions = await VendorSubscription.findAll({
-        where: { vendor_id, status: 'active' },
-        include: [
-          { model: Vendor, attributes: ['id', 'business_name'], include: [{ model: User, attributes: ['id', 'name', 'fcm_token'] }] },
-          { model: SubscriptionPlan, attributes: ['name'] },
-        ],
-      });
-    } else if (type === 'expiring') {
-      // All expiring within 7 days
-      subscriptions = await VendorSubscription.findAll({
-        where: { status: 'active', expires_at: { [Op.gt]: now, [Op.lte]: soon } },
-        include: [
-          { model: Vendor, attributes: ['id', 'business_name'], include: [{ model: User, attributes: ['id', 'name', 'fcm_token'] }] },
-          { model: SubscriptionPlan, attributes: ['name'] },
-        ],
-      });
-    } else if (type === 'expired') {
-      // All expired but still marked active (stale)
-      subscriptions = await VendorSubscription.findAll({
-        where: { status: 'active', expires_at: { [Op.lt]: now } },
-        include: [
-          { model: Vendor, attributes: ['id', 'business_name'], include: [{ model: User, attributes: ['id', 'name', 'fcm_token'] }] },
-          { model: SubscriptionPlan, attributes: ['name'] },
-        ],
-      });
+    const { search = '', page = 1 } = req.query;
+    const limit = 15, offset = (page - 1) * limit;
+    const where = {};
+    if (search) {
+      const { Op } = require('sequelize');
+      where[Op.or] = [{ name: { [Op.like]: `%${search}%` } }, { phone: { [Op.like]: `%${search}%` } }];
     }
+    const { count, rows } = await Worker.findAndCountAll({ where, limit, offset, order: [['created_at', 'DESC']] });
+    res.render('admin/workers', {
+      title: 'Workers', page: 'workers', workers: rows, total: count,
+      currentPage: +page, pages: Math.ceil(count / limit), search,
+      adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
 
-    if (!subscriptions.length) {
-      req.flash('error', 'No vendors found for this action');
-      return res.redirect('/admin/subscriptions');
-    }
+const createWorker = async (req, res) => {
+  try {
+    const { name, email, phone, aadhaar_number } = req.body;
+    if (!name || !phone) { req.flash('error', 'Name and phone are required'); return res.redirect('/admin/workers'); }
+    const existing = await Worker.findOne({ where: { phone } });
+    if (existing) { req.flash('error', 'Phone already registered'); return res.redirect('/admin/workers'); }
+    const aadhaar_front = req.files?.aadhaar_front?.[0]?.filename || null;
+    const aadhaar_back  = req.files?.aadhaar_back?.[0]?.filename  || null;
+    await Worker.create({ name, email: email || null, phone, aadhaar_number: aadhaar_number || null, aadhaar_front, aadhaar_back });
+    req.flash('success', `Worker "${name}" registered successfully`);
+    res.redirect('/admin/workers');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/workers'); }
+};
 
-    let sent = 0;
-    for (const sub of subscriptions) {
-      const vendor = sub.Vendor;
-      const user   = vendor?.User;
-      const plan   = sub.SubscriptionPlan?.name || 'your';
-      const expiry = new Date(sub.expires_at).toLocaleDateString('en-IN');
-      const daysLeft = Math.ceil((new Date(sub.expires_at) - now) / (1000 * 60 * 60 * 24));
+const workerDetail = async (req, res) => {
+  try {
+    const worker = await Worker.findByPk(req.params.id);
+    if (!worker) { req.flash('error', 'Worker not found'); return res.redirect('/admin/workers'); }
+    const assignedBookings = await Booking.findAll({
+      where: { worker_id: worker.id },
+      order: [['created_at', 'DESC']],
+      include: [
+        { model: User, attributes: ['name', 'mobile'] },
+        { model: Service, attributes: ['name'] },
+      ],
+    });
+    const totalCollected = assignedBookings
+      .filter(b => b.payment_method === 'cod' && b.payment_status === 'paid')
+      .reduce((s, b) => s + parseFloat(b.cod_collected || 0), 0);
+    const totalAdminDue = assignedBookings
+      .filter(b => b.payment_method === 'cod' && b.payment_status === 'paid')
+      .reduce((s, b) => s + parseFloat(b.admin_due || 0), 0);
+    res.render('admin/worker-detail', {
+      title: worker.name, page: 'workers', worker, assignedBookings, totalCollected, totalAdminDue,
+      adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
 
-      let title, body;
-      if (type === 'expired') {
-        title = 'Subscription Expired';
-        body  = `Your ${plan} plan has expired. Renew now to continue listing your services.`;
-      } else if (daysLeft <= 2) {
-        title = '⚠️ Subscription Expiring Today/Tomorrow!';
-        body  = `Your ${plan} plan expires on ${expiry}. Renew immediately to avoid service disruption.`;
-      } else {
-        title = '🔔 Subscription Renewal Reminder';
-        body  = `Your ${plan} plan expires on ${expiry} (${daysLeft} days left). Renew now to stay active.`;
-      }
+const toggleBlockWorker = async (req, res) => {
+  const worker = await Worker.findByPk(req.params.id);
+  if (worker) await worker.update({ is_blocked: !worker.is_blocked });
+  req.flash('success', `Worker ${worker.is_blocked ? 'blocked' : 'unblocked'}`);
+  res.redirect(`/admin/workers/${req.params.id}`);
+};
 
-      // Save in-app notification
-      await Notification.create({
-        user_id: user.id,
-        title,
-        body,
-        type: 'system',
-      });
-
-      // Push notification if FCM token available
-      if (user.fcm_token) {
-        await sendPushNotification(user.fcm_token, title, body).catch(() => {});
-      }
-
-      sent++;
-    }
-
-    req.flash('success', `Renewal notification sent to ${sent} vendor(s)`);
-    res.redirect('/admin/subscriptions');
-  } catch (e) { req.flash('error', e.message); res.redirect('/admin/subscriptions'); }
+// POST /admin/bookings/:id/assign-worker  Body: { worker_id }
+const assignWorker = async (req, res) => {
+  try {
+    const { worker_id } = req.body;
+    const booking = await Booking.findByPk(req.params.id);
+    if (!booking) { req.flash('error', 'Booking not found'); return res.redirect('/admin/bookings'); }
+    const worker = await Worker.findByPk(worker_id);
+    if (!worker) { req.flash('error', 'Worker not found'); return res.redirect(`/admin/bookings/${req.params.id}`); }
+    await booking.update({ worker_id, status: 'accepted' });
+    // Notify customer
+    await Notification.create({
+      user_id: booking.user_id,
+      title: 'Worker Assigned',
+      body: `${worker.name} has been assigned to your booking #${booking.id}`,
+      type: 'booking',
+      data: { bookingId: booking.id },
+    });
+    req.flash('success', `Worker "${worker.name}" assigned to booking #${booking.id}`);
+    res.redirect(`/admin/bookings/${req.params.id}`);
+  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/bookings/${req.params.id}`); }
 };
 
 module.exports = {
@@ -876,12 +635,8 @@ module.exports = {
   showForgotPassword, doForgotPassword, showResetPassword, doResetPassword,
   dashboard,
   users, toggleBlockUser, userDetail,
-  vendors, createVendor, updateVendorProfile,
-  vendorDetail, updateVendorKyc, updateVendorPricing, toggleSuspendVendor, toggleFeaturedVendor,
-  assignVendorSubscription, cancelVendorSubscription,
-  subscriptionPlans, createPlan, updatePlan, togglePlan,
   categories, createCategory, updateCategory, deleteCategory,
-  services, serviceDetail, toggleService,
+  services, serviceDetail, toggleService, createService, updateService,
   bookings, bookingDetail, updateBookingStatus,
   revenue,
   platformSettings, updatePlatformSettings,
@@ -889,5 +644,5 @@ module.exports = {
   doChangePassword,
   policies, createPolicy, updatePolicy, deletePolicy,
   zones, createZone, updateZone, deleteZone,
-  sendRenewalNotification,
+  workers, createWorker, workerDetail, toggleBlockWorker, assignWorker,
 };

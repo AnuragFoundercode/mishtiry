@@ -128,14 +128,56 @@
       </div>
     </div>
 
-    <!-- Vendor -->
+    <!-- Worker Assignment -->
     <div class="card mb-3">
-      <div class="card-header"><i class="bi bi-shop me-2 text-success"></i>Vendor</div>
+      <div class="card-header"><i class="bi bi-person-badge-fill me-2 text-warning"></i>Assigned Worker</div>
       <div class="card-body">
-        <p class="fw-semibold mb-1"><%= booking.Vendor?.business_name || '—' %></p>
-        <% if(booking.Vendor?.address){ %>
-          <p class="text-muted small mb-0"><i class="bi bi-geo-alt me-1"></i><%= booking.Vendor.address %></p>
+        <% if(booking.Worker){ %>
+          <p class="fw-semibold mb-1"><i class="bi bi-person-check-fill text-success me-1"></i><%= booking.Worker.name %></p>
+          <p class="text-muted small mb-2"><i class="bi bi-phone me-1"></i><%= booking.Worker.phone %></p>
+          <a href="/admin/workers/<%= booking.Worker.id %>" class="btn btn-sm btn-outline-primary">View Worker</a>
+        <% } else { %>
+          <p class="text-muted small mb-2">No worker assigned yet</p>
         <% } %>
+        <% if(booking.status !== 'completed' && booking.status !== 'cancelled'){ %>
+          <form method="POST" action="/admin/bookings/<%= booking.id %>/assign-worker" class="mt-2">
+            <div class="input-group input-group-sm">
+              <select name="worker_id" class="form-select" required>
+                <option value="">— Select Worker —</option>
+                <% availableWorkers.forEach(w => { %>
+                  <option value="<%= w.id %>" <%= booking.worker_id == w.id ? 'selected' : '' %>><%= w.name %> (<%= w.phone %>)</option>
+                <% }) %>
+              </select>
+              <button class="btn btn-warning" type="submit"><i class="bi bi-person-check-fill"></i> Assign</button>
+            </div>
+          </form>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Payment Info -->
+    <div class="card mb-3">
+      <div class="card-header"><i class="bi bi-cash-coin me-2 text-success"></i>Payment</div>
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <tbody>
+            <tr>
+              <td class="text-muted">Method</td>
+              <td>
+                <% if(booking.payment_method === 'cod'){ %>
+                  <span class="badge bg-warning text-dark"><i class="bi bi-cash me-1"></i>Cash on Delivery</span>
+                <% } else { %>
+                  <span class="badge bg-info"><i class="bi bi-credit-card me-1"></i>Online</span>
+                <% } %>
+              </td>
+            </tr>
+            <tr><td class="text-muted">Payment Status</td><td><span class="badge bg-<%= booking.payment_status==='paid'?'success':booking.payment_status==='refunded'?'warning':'secondary' %>"><%= booking.payment_status %></span></td></tr>
+            <% if(booking.payment_method === 'cod'){ %>
+              <tr><td class="text-muted">COD Collected</td><td class="fw-semibold text-success">₹<%= parseFloat(booking.cod_collected||0).toFixed(2) %></td></tr>
+              <tr><td class="text-muted">Admin Due</td><td class="fw-semibold text-danger">₹<%= parseFloat(booking.admin_due||0).toFixed(2) %></td></tr>
+            <% } %>
+          </tbody>
+        </table>
       </div>
     </div>
 
@@ -149,10 +191,7 @@
             <tr><td class="text-muted">Platform Charge</td><td class="text-end">₹<%= parseFloat(booking.platform_charge||0).toFixed(2) %></td></tr>
             <tr><td class="text-muted">GST</td><td class="text-end">₹<%= parseFloat(booking.gst_amount||0).toFixed(2) %></td></tr>
             <tr class="table-light"><td class="fw-bold">Total</td><td class="text-end fw-bold text-primary">₹<%= parseFloat(booking.total_amount||0).toFixed(2) %></td></tr>
-            <tr><td class="text-muted">Commission (<%= booking.commission_percent_applied||0 %>%)</td><td class="text-end text-success fw-semibold">₹<%= parseFloat(booking.commission_amount||0).toFixed(2) %></td></tr>
-            <% if(booking.vendor_payout){ %>
-            <tr><td class="text-muted">Vendor Payout</td><td class="text-end">₹<%= parseFloat(booking.vendor_payout).toFixed(2) %></td></tr>
-            <% } %>
+
           </tbody>
         </table>
       </div>

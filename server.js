@@ -10,7 +10,8 @@ require('./src/models/index');
 
 // Inject io into controllers
 const userBookingCtrl = require('./src/controllers/user/booking.controller');
-const vendorBookingCtrl = require('./src/controllers/vendor/booking.controller');
+const vendorCtrl = require('./src/controllers/vendor/vendor.controller');
+const workerBookingCtrl = require('./src/controllers/worker/booking.controller');
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -19,7 +20,8 @@ const io = new Server(server, {
 
 initSocket(io);
 userBookingCtrl.setIo(io);
-vendorBookingCtrl.setIo(io);
+vendorCtrl.setIo(io);
+workerBookingCtrl.setIo(io);
 
 const PORT = process.env.PORT || 3300;
 

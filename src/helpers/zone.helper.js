@@ -5,13 +5,13 @@
 const isPointInPolygon = (lat, lng, coordinates) => {
   let inside = false;
   for (let i = 0, j = coordinates.length - 1; i < coordinates.length; j = i++) {
-    const xi = coordinates[i].lat;
-    const yi = coordinates[i].lng;
-    const xj = coordinates[j].lat;
-    const yj = coordinates[j].lng;
+    const xi = coordinates[i].lng;  // x = longitude
+    const yi = coordinates[i].lat;  // y = latitude
+    const xj = coordinates[j].lng;
+    const yj = coordinates[j].lat;
 
-    const intersect = ((yi > lng) !== (yj > lng))
-      && (lat < (xj - xi) * (lng - yi) / (yj - yi) + xi);
+    const intersect = ((yi > lat) !== (yj > lat))
+      && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi);
     if (intersect) inside = !inside;
   }
   return inside;
@@ -25,4 +25,15 @@ const getZonesForLocation = async (lat, lng, Zone) => {
   return zones.filter(zone => isPointInPolygon(lat, lng, zone.coordinates));
 };
 
-module.exports = { isPointInPolygon, getZonesForLocation };
+/**
+ * Find first zone that contains the given coordinates from a pre-fetched list
+ */
+const findZoneByCoordinates = (lat, lng, zones) => {
+  return zones.find(zone =>
+    Array.isArray(zone.coordinates) && zone.coordinates.length >= 3
+      ? isPointInPolygon(lat, lng, zone.coordinates)
+      : false
+  ) || null;
+};
+
+module.exports = { isPointInPolygon, getZonesForLocation, findZoneByCoordinates };

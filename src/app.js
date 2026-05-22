@@ -38,6 +38,7 @@ app.locals.formatDate = formatDate;
 app.use('/api/user', require('./routes/user'));
 app.use('/api/vendor', require('./routes/vendor'));
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/worker', require('./routes/worker'));
 
 // Admin Web Panel
 app.use('/admin', require('./routes/admin/web'));

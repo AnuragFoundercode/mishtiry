@@ -1,0 +1,134 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i><%= success %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<% } %>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-header bg-white border-bottom">
+    <div class="d-flex flex-wrap gap-3 justify-content-between align-items-center">
+      <div>
+        <h5 class="mb-1 fw-bold text-dark"><i class="bi bi-person-badge-fill me-2 text-primary"></i>Workers</h5>
+        <p class="text-muted small mb-0">Total: <span class="badge bg-primary"><%= total %></span> workers</p>
+      </div>
+      <div class="d-flex gap-2">
+        <form class="d-flex gap-2" method="GET">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" name="search" class="form-control border-start-0" placeholder="Search name or phone" value="<%= search %>" style="width:220px"/>
+          </div>
+          <button class="btn btn-primary"><i class="bi bi-search me-1"></i>Search</button>
+          <% if(search){ %><a href="/admin/workers" class="btn btn-outline-secondary"><i class="bi bi-x-lg"></i></a><% } %>
+        </form>
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addWorkerModal">
+          <i class="bi bi-plus-lg me-1"></i>Add Worker
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr><th>#</th><th>Worker</th><th>Phone</th><th>Email</th><th>Aadhaar</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+      <% workers.forEach((w,i) => { %>
+        <tr>
+          <td class="text-muted small"><%= (currentPage-1)*15+i+1 %></td>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:38px;height:38px;">
+                <i class="bi bi-person-badge-fill text-warning"></i>
+              </div>
+              <div>
+                <div class="fw-semibold"><%= w.name %></div>
+                <small class="text-muted">#<%= w.id %></small>
+              </div>
+            </div>
+          </td>
+          <td><i class="bi bi-phone text-muted me-1"></i><%= w.phone %></td>
+          <td><small class="text-muted"><%= w.email || '—' %></small></td>
+          <td><small class="text-muted"><%= w.aadhaar_number ? w.aadhaar_number.replace(/\d(?=\d{4})/g,'*') : '—' %></small></td>
+          <td>
+            <% if(w.is_blocked){ %>
+              <span class="badge bg-danger rounded-pill">Blocked</span>
+            <% } else if(!w.is_active){ %>
+              <span class="badge bg-secondary rounded-pill">Inactive</span>
+            <% } else { %>
+              <span class="badge bg-success rounded-pill">Active</span>
+            <% } %>
+          </td>
+          <td><small class="text-muted"><%= formatDate(w.created_at) %></small></td>
+          <td>
+            <a href="/admin/workers/<%= w.id %>" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i>View</a>
+          </td>
+        </tr>
+      <% }) %>
+      <% if(!workers.length){ %>
+        <tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-person-badge" style="font-size:2rem;"></i><p class="mt-2 mb-0">No workers found</p></td></tr>
+      <% } %>
+      </tbody>
+    </table>
+  </div>
+  <% if(pages > 1){ %>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <small class="text-muted">Showing <%= (currentPage-1)*15+1 %>–<%= Math.min(currentPage*15,total) %> of <%= total %></small>
+    <nav><ul class="pagination pagination-sm mb-0">
+      <% for(let p=1;p<=pages;p++){ %>
+        <li class="page-item <%= p==currentPage?'active':'' %>"><a class="page-link" href="?page=<%= p %>&search=<%= search %>"><%= p %></a></li>
+      <% } %>
+    </ul></nav>
+  </div>
+  <% } %>
+</div>
+
+<!-- Add Worker Modal -->
+<div class="modal fade" id="addWorkerModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-badge-fill me-2 text-primary"></i>Register New Worker</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/admin/workers" enctype="multipart/form-data">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Full Name <span class="text-danger">*</span></label>
+              <input type="text" name="name" class="form-control" placeholder="Worker's full name" required>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Phone <span class="text-danger">*</span></label>
+              <input type="text" name="phone" class="form-control" placeholder="10-digit mobile" required>
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" placeholder="Optional">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Aadhaar Number</label>
+              <input type="text" name="aadhaar_number" class="form-control" placeholder="12-digit Aadhaar" maxlength="12">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Aadhaar Front</label>
+              <input type="file" name="aadhaar_front" class="form-control" accept="image/*">
+            </div>
+            <div class="col-sm-6">
+              <label class="form-label">Aadhaar Back</label>
+              <input type="file" name="aadhaar_back" class="form-control" accept="image/*">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success"><i class="bi bi-person-plus-fill me-1"></i>Register Worker</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

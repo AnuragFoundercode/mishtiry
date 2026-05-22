@@ -5,6 +5,7 @@ const { authenticate, authorize } = require('../../middlewares/auth.middleware')
 router.use(authenticate, authorize('admin'));
 
 router.get('/dashboard', adminCtrl.getDashboard);
+router.post('/vendors', adminCtrl.createVendor);
 router.patch('/vendors/:id/approve', adminCtrl.approveVendor);
 router.patch('/users/:id/block', adminCtrl.blockUser);
 router.post('/notifications/broadcast', adminCtrl.sendBroadcastNotification);

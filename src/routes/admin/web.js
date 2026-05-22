@@ -28,25 +28,6 @@ router.get('/users', guard, ctrl.users);
 router.get('/users/:id', guard, ctrl.userDetail);
 router.post('/users/:id/toggle-block', guard, ctrl.toggleBlockUser);
 
-// Vendors
-router.get('/vendors', guard, ctrl.vendors);
-router.post('/vendors/create', guard, upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), ctrl.createVendor);
-router.get('/vendors/:id', guard, ctrl.vendorDetail);
-router.post('/vendors/:id/update-profile', guard, upload.fields([{ name: 'logo', maxCount: 1 }, { name: 'banner', maxCount: 1 }]), ctrl.updateVendorProfile);
-router.post('/vendors/:id/kyc', guard, ctrl.updateVendorKyc);
-router.post('/vendors/:id/pricing', guard, ctrl.updateVendorPricing);
-router.post('/vendors/:id/toggle-suspend', guard, ctrl.toggleSuspendVendor);
-router.post('/vendors/:id/toggle-featured', guard, ctrl.toggleFeaturedVendor);
-router.post('/vendors/:id/subscription', guard, ctrl.assignVendorSubscription);
-router.post('/vendors/:id/subscription/:subId/cancel', guard, ctrl.cancelVendorSubscription);
-
-// Subscription Plans
-router.get('/subscriptions', guard, ctrl.subscriptionPlans);
-router.post('/subscriptions', guard, ctrl.createPlan);
-router.post('/subscriptions/:id/update', guard, ctrl.updatePlan);
-router.post('/subscriptions/:id/toggle', guard, ctrl.togglePlan);
-router.post('/subscriptions/notify-renewal', guard, ctrl.sendRenewalNotification);
-
 // Categories
 router.get('/categories', guard, ctrl.categories);
 router.post('/categories', guard, upload.single('image'), ctrl.createCategory);
@@ -56,12 +37,21 @@ router.post('/categories/:id/delete', guard, ctrl.deleteCategory);
 // Services
 router.get('/services', guard, ctrl.services);
 router.get('/services/:id', guard, ctrl.serviceDetail);
+router.post('/services', guard, upload.array('images', 10), ctrl.createService);
+router.post('/services/:id/update', guard, upload.array('images', 10), ctrl.updateService);
 router.post('/services/:id/toggle', guard, ctrl.toggleService);
 
 // Bookings
 router.get('/bookings', guard, ctrl.bookings);
 router.get('/bookings/:id', guard, ctrl.bookingDetail);
 router.post('/bookings/:id/update-status', guard, ctrl.updateBookingStatus);
+router.post('/bookings/:id/assign-worker', guard, ctrl.assignWorker);
+
+// Workers
+router.get('/workers', guard, ctrl.workers);
+router.post('/workers', guard, upload.fields([{ name: 'aadhaar_front', maxCount: 1 }, { name: 'aadhaar_back', maxCount: 1 }]), ctrl.createWorker);
+router.get('/workers/:id', guard, ctrl.workerDetail);
+router.post('/workers/:id/toggle-block', guard, ctrl.toggleBlockWorker);
 
 // Revenue
 router.get('/revenue', guard, ctrl.revenue);

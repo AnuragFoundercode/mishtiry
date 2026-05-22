@@ -1,0 +1,134 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show"><i class="bi bi-check-circle-fill me-2"></i><%= success %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+<% } %>
+
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="/admin/workers" class="btn btn-sm btn-light"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge-fill me-2 text-primary"></i><%= worker.name %></h5>
+  <form method="POST" action="/admin/workers/<%= worker.id %>/toggle-block" class="ms-auto">
+    <button class="btn btn-sm <%= worker.is_blocked ? 'btn-success' : 'btn-danger' %>"
+      onclick="return confirm('<%= worker.is_blocked ? 'Unblock' : 'Block' %> this worker?')">
+      <i class="bi bi-<%= worker.is_blocked ? 'check-circle' : 'x-circle' %> me-1"></i>
+      <%= worker.is_blocked ? 'Unblock' : 'Block' %>
+    </button>
+  </form>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card text-center p-3">
+      <div class="text-muted small mb-1">Total Assigned</div>
+      <div class="fw-bold fs-4 text-primary"><%= assignedBookings.length %></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3">
+      <div class="text-muted small mb-1">Completed</div>
+      <div class="fw-bold fs-4 text-success"><%= assignedBookings.filter(b=>b.status==='completed').length %></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3">
+      <div class="text-muted small mb-1">COD Collected</div>
+      <div class="fw-bold fs-4 text-warning">₹<%= totalCollected.toFixed(2) %></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3">
+      <div class="text-muted small mb-1">Admin Due (COD)</div>
+      <div class="fw-bold fs-4 text-danger">₹<%= totalAdminDue.toFixed(2) %></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Worker Info -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-person-fill me-2 text-primary"></i>Worker Info</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><td class="text-muted">Name</td><td class="fw-semibold"><%= worker.name %></td></tr>
+          <tr><td class="text-muted">Phone</td><td><%= worker.phone %></td></tr>
+          <tr><td class="text-muted">Email</td><td><%= worker.email || '—' %></td></tr>
+          <tr><td class="text-muted">Aadhaar</td><td><%= worker.aadhaar_number ? worker.aadhaar_number.replace(/\d(?=\d{4})/g,'*') : '—' %></td></tr>
+          <tr><td class="text-muted">Status</td><td>
+            <% if(worker.is_blocked){ %>
+              <span class="badge bg-danger">Blocked</span>
+            <% } else { %>
+              <span class="badge bg-success">Active</span>
+            <% } %>
+          </td></tr>
+          <tr><td class="text-muted">Joined</td><td><small><%= formatDate(worker.created_at) %></small></td></tr>
+        </table>
+        <% if(worker.aadhaar_front || worker.aadhaar_back){ %>
+          <hr>
+          <p class="text-muted small fw-semibold mb-2">Aadhaar Documents</p>
+          <div class="d-flex gap-2">
+            <% if(worker.aadhaar_front){ %>
+              <a href="/uploads/<%= worker.aadhaar_front %>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-image me-1"></i>Front</a>
+            <% } %>
+            <% if(worker.aadhaar_back){ %>
+              <a href="/uploads/<%= worker.aadhaar_back %>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-image me-1"></i>Back</a>
+            <% } %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Bookings -->
+  <div class="col-lg-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-calendar-check me-2 text-primary"></i>Assigned Bookings</div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>#</th><th>Customer</th><th>Service</th><th>Date</th><th>Payment</th><th>COD</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+          <% const sc={pending:'warning',accepted:'info',in_progress:'primary',completed:'success',cancelled:'danger'}; %>
+          <% assignedBookings.forEach(b => { %>
+            <tr>
+              <td><a href="/admin/bookings/<%= b.id %>" class="text-primary fw-semibold">#<%= b.id %></a></td>
+              <td>
+                <div class="fw-medium"><%= b.User?.name || '—' %></div>
+                <small class="text-muted"><%= b.User?.mobile || '' %></small>
+              </td>
+              <td><small><%= b.Service?.name || '—' %></small></td>
+              <td><small class="text-muted"><%= formatDate(b.booking_date) %></small></td>
+              <td>
+                <% if(b.payment_method === 'cod'){ %>
+                  <span class="badge bg-warning text-dark">COD</span>
+                <% } else { %>
+                  <span class="badge bg-info">Online</span>
+                <% } %>
+                <span class="badge bg-<%= b.payment_status==='paid'?'success':b.payment_status==='refunded'?'warning':'secondary' %> ms-1"><%= b.payment_status %></span>
+              </td>
+              <td>
+                <% if(b.payment_method === 'cod' && b.payment_status === 'paid'){ %>
+                  <small class="text-success fw-semibold">Collected: ₹<%= parseFloat(b.cod_collected||0).toFixed(2) %></small><br>
+                  <small class="text-danger">Due: ₹<%= parseFloat(b.admin_due||0).toFixed(2) %></small>
+                <% } else { %>
+                  <small class="text-muted">—</small>
+                <% } %>
+              </td>
+              <td><span class="badge bg-<%= sc[b.status]||'secondary' %>"><%= b.status %></span></td>
+            </tr>
+          <% }) %>
+          <% if(!assignedBookings.length){ %>
+            <tr><td colspan="7" class="text-center py-4 text-muted">No bookings assigned yet</td></tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

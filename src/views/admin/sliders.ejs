@@ -40,9 +40,7 @@
           <div class="mb-3">
             <label class="form-label fw-medium">Show For <span class="text-danger">*</span></label>
             <select name="type" class="form-select" required>
-              <option value="both">Both (User & Vendor)</option>
-              <option value="user">User Only</option>
-              <option value="vendor">Vendor Only</option>
+              <option value="user">User App</option>
             </select>
           </div>
           <div class="mb-3">
@@ -96,12 +94,7 @@
                 <small class="text-muted"><%= s.subtitle || '' %></small>
               </td>
               <td>
-                <span class="badge <%=
-                  s.type === 'user' ? 'bg-info' :
-                  s.type === 'vendor' ? 'bg-warning text-dark' : 'bg-primary'
-                %> rounded-pill">
-                  <%= s.type === 'both' ? 'User & Vendor' : s.type.charAt(0).toUpperCase() + s.type.slice(1) %>
-                </span>
+                <span class="badge bg-info rounded-pill">User App</span>
               </td>
               <td><span class="badge bg-light text-dark border"><%= s.sort_order %></span></td>
               <td>
@@ -152,9 +145,7 @@
                       <div class="mb-3">
                         <label class="form-label fw-medium">Show For</label>
                         <select name="type" class="form-select">
-                          <option value="both" <%= s.type==='both'?'selected':'' %>>Both (User & Vendor)</option>
-                          <option value="user" <%= s.type==='user'?'selected':'' %>>User Only</option>
-                          <option value="vendor" <%= s.type==='vendor'?'selected':'' %>>Vendor Only</option>
+                          <option value="user" selected>User App</option>
                         </select>
                       </div>
                       <div class="mb-3">
