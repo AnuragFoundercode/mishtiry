@@ -3,6 +3,7 @@ const Service = require('../../models/service.model');
 const Zone = require('../../models/zone.model');
 const Worker = require('../../models/worker.model');
 const User = require('../../models/user.model');
+const Address = require('../../models/address.model');
 const Notification = require('../../models/notification.model');
 const { success, error } = require('../../helpers/response.helper');
 const { emitToUser } = require('../../sockets/socket.handler');
@@ -29,19 +30,27 @@ const previewCharges = async (req, res) => {
 // Online → booking created, Cashfree order created, payment_session_id returned
 const createBooking = async (req, res) => {
   try {
-    const { service_id, booking_date, notes, address, latitude, longitude, payment_method } = req.body;
+    const { service_id, booking_date, notes, address_id, payment_method } = req.body;
 
     if (!service_id || !booking_date) return error(res, 'service_id and booking_date are required', 400);
-    if (!latitude || !longitude) return error(res, 'Location coordinates are required', 400);
+    if (!address_id) return error(res, 'address_id is required', 400);
+
+    // Fetch the saved address
+    const address = await Address.findOne({ where: { id: address_id, user_id: req.user.id } });
+    if (!address) return error(res, 'Address not found', 404);
+
+    if (!address.latitude || !address.longitude) return error(res, 'Address does not have location coordinates', 400);
 
     const service = await Service.findOne({ where: { id: service_id, is_active: true } });
     if (!service) return error(res, 'Service not found', 404);
 
     const allActiveZones = await Zone.findAll({ where: { is_active: true } });
-    if (!allActiveZones.length) return error(res, 'No service zones available currently', 400);
-
-    //const matchedZone = findZoneByCoordinates(parseFloat(latitude), parseFloat(longitude), allActiveZones);
-   // if (!matchedZone) return error(res, 'Sorry! We do not serve your location yet.', 400);
+    // Zone check — skip if no zones configured yet
+    let matchedZone = null;
+    if (allActiveZones.length) {
+      matchedZone = findZoneByCoordinates(parseFloat(address.latitude), parseFloat(address.longitude), allActiveZones);
+      if (!matchedZone) return error(res, 'Sorry! We do not serve your location yet.', 400);
+    }
 
     const charges = await calculateBookingCharges(service.price);
     const isCod = payment_method === 'cod';
@@ -51,8 +60,9 @@ const createBooking = async (req, res) => {
       service_id,
       booking_date,
       notes: notes || null,
-      address: address || null,
-     // zone_id: matchedZone.id,
+      address_id: address.id,
+      address: address.full_address,
+      zone_id: matchedZone ? matchedZone.id : null,
       amount: charges.service_price,
       platform_charge: charges.platform_charge,
       gst_amount: charges.gst_amount,
@@ -93,10 +103,7 @@ const createBooking = async (req, res) => {
       },
     }, 'Booking created. Complete payment.', 201);
 
-  } catch (err)
-  { 
-      console.log("err",err);
-      return error(res, err.message); }
+  } catch (err) { return error(res, err.message); }
 };
 
 // ─── GET /api/user/bookings/:id/payment-verify ───────────────────────────────
@@ -159,6 +166,7 @@ const getMyBookings = async (req, res) => {
       include: [
         { model: Service, include: [{ model: require('../../models/category.model'), attributes: ['id', 'name'] }] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
+        { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'latitude', 'longitude', 'city', 'pincode'], required: false },
       ],
       order: [['created_at', 'DESC']],
     });
@@ -174,6 +182,7 @@ const getBookingDetail = async (req, res) => {
       include: [
         { model: Service, include: [{ model: require('../../models/category.model'), attributes: ['id', 'name'] }] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
+        { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'latitude', 'longitude', 'city', 'pincode'], required: false },
       ],
     });
     if (!booking) return error(res, 'Booking not found', 404);

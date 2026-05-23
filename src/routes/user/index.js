@@ -2,6 +2,7 @@ const router = require('express').Router();
 const authCtrl = require('../../controllers/user/auth.controller');
 const bookingCtrl = require('../../controllers/user/booking.controller');
 const userCtrl = require('../../controllers/user/user.controller');
+const addressCtrl = require('../../controllers/user/address.controller');
 const sliderCtrl = require('../../controllers/admin/slider.controller');
 const { authenticate, authorize } = require('../../middlewares/auth.middleware');
 const upload = require('../../middlewares/upload.middleware');
@@ -22,6 +23,13 @@ router.get('/categories/:id/services', ...auth, userCtrl.getServicesByCategory);
 
 // Sliders
 router.get('/sliders', ...auth, sliderCtrl.getSliders);
+
+// Addresses
+router.get('/addresses', ...auth, addressCtrl.getAddresses);
+router.post('/addresses', ...auth, addressCtrl.createAddress);
+router.put('/addresses/:id', ...auth, addressCtrl.updateAddress);
+router.delete('/addresses/:id', ...auth, addressCtrl.deleteAddress);
+router.put('/addresses/:id/set-default', ...auth, addressCtrl.setDefault);
 
 // Bookings
 router.get('/bookings/charges-preview', ...auth, bookingCtrl.previewCharges);
