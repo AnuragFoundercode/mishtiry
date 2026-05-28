@@ -1,0 +1,300 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+
+<div class="row g-4">
+  <!-- Add Coupon Form -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-plus-circle me-2 text-primary"></i>Create New Coupon
+        </h6>
+      </div>
+      <div class="card-body p-4">
+        <form method="POST" action="/admin/coupons">
+          <div class="row g-3">
+            <div class="col-6">
+              <label class="form-label fw-medium">Coupon Code <span class="text-danger">*</span></label>
+              <input type="text" name="code" class="form-control text-uppercase" placeholder="e.g. SAVE20" required style="text-transform:uppercase;"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Title <span class="text-danger">*</span></label>
+              <input type="text" name="title" class="form-control" placeholder="e.g. 20% Off" required/>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-medium">Description <small class="text-muted">(optional)</small></label>
+              <input type="text" name="description" class="form-control" placeholder="Short description for users"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Discount Type</label>
+              <select name="discount_type" class="form-select">
+                <option value="percentage">Percentage (%)</option>
+                <option value="flat">Flat (₹)</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Discount Value <span class="text-danger">*</span></label>
+              <input type="number" name="discount_value" class="form-control" step="0.01" min="0" placeholder="e.g. 20" required/>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-medium">Category <small class="text-muted">(leave empty for Global coupon)</small></label>
+              <select name="category_id" class="form-select">
+                <option value="">🌐 Global (All Categories)</option>
+                <% categories.forEach(c => { %>
+                  <option value="<%= c.id %>"><%= c.name %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Min Order Amount</label>
+              <input type="number" name="min_order_amount" class="form-control" step="0.01" min="0" placeholder="0" value="0"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Max Discount (₹)</label>
+              <input type="number" name="max_discount_amount" class="form-control" step="0.01" min="0" placeholder="No limit"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Total Usage Limit</label>
+              <input type="number" name="usage_limit" class="form-control" min="0" placeholder="Unlimited"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Per User Limit</label>
+              <input type="number" name="per_user_limit" class="form-control" min="1" placeholder="1" value="1"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">Start Date</label>
+              <input type="datetime-local" name="start_date" class="form-control"/>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-medium">End Date</label>
+              <input type="datetime-local" name="end_date" class="form-control"/>
+            </div>
+          </div>
+          <button class="btn btn-primary w-100 mt-4">
+            <i class="bi bi-plus-lg me-1"></i>Create Coupon
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Coupons List -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-ticket-perforated me-2 text-primary"></i>All Coupons
+          </h6>
+          <span class="badge bg-primary"><%= coupons.length %> total</span>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Code</th>
+              <th>Discount</th>
+              <th>Category</th>
+              <th>Usage</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+          <% coupons.forEach((c, i) => { %>
+            <tr>
+              <td class="text-muted small fw-medium"><%= i+1 %></td>
+              <td>
+                <span class="fw-bold text-dark"><%= c.code %></span>
+                <br><small class="text-muted"><%= c.title %></small>
+              </td>
+              <td>
+                <span class="badge bg-primary bg-opacity-10 text-primary">
+                  <% if(c.discount_type === 'percentage') { %>
+                    <%= c.discount_value %>%
+                  <% } else { %>
+                    ₹<%= c.discount_value %>
+                  <% } %>
+                </span>
+                <% if(c.max_discount_amount) { %>
+                  <br><small class="text-muted">Max: ₹<%= c.max_discount_amount %></small>
+                <% } %>
+              </td>
+              <td>
+                <% if(c.Category) { %>
+                  <span class="badge bg-light text-dark border"><%= c.Category.name %></span>
+                <% } else { %>
+                  <span class="badge bg-success bg-opacity-10 text-success">🌐 Global</span>
+                <% } %>
+              </td>
+              <td>
+                <span class="fw-medium"><%= c.used_count %></span>
+                <% if(c.usage_limit) { %>
+                  <span class="text-muted">/ <%= c.usage_limit %></span>
+                <% } else { %>
+                  <span class="text-muted">/ ∞</span>
+                <% } %>
+              </td>
+              <td>
+                <% const now = new Date(); %>
+                <% const isExpired = c.end_date && new Date(c.end_date) < now; %>
+                <% if(isExpired) { %>
+                  <span class="badge bg-warning text-dark rounded-pill">
+                    <i class="bi bi-clock-history me-1" style="font-size:10px;"></i>Expired
+                  </span>
+                <% } else if(c.is_active) { %>
+                  <span class="badge bg-success rounded-pill">
+                    <i class="bi bi-check-circle me-1" style="font-size:10px;"></i>Active
+                  </span>
+                <% } else { %>
+                  <span class="badge bg-secondary rounded-pill">
+                    <i class="bi bi-pause-circle me-1" style="font-size:10px;"></i>Inactive
+                  </span>
+                <% } %>
+              </td>
+              <td>
+                <div class="btn-group btn-group-sm">
+                  <a href="/admin/coupons/<%= c.id %>" class="btn btn-outline-info" title="View Usage">
+                    <i class="bi bi-eye"></i>
+                  </a>
+                  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editCoupon<%= c.id %>" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form method="POST" action="/admin/coupons/<%= c.id %>/toggle" class="d-inline">
+                    <button class="btn btn-outline-<%= c.is_active ? 'warning' : 'success' %>" title="<%= c.is_active ? 'Deactivate' : 'Activate' %>">
+                      <i class="bi bi-<%= c.is_active ? 'pause' : 'play' %>-fill"></i>
+                    </button>
+                  </form>
+                  <form method="POST" action="/admin/coupons/<%= c.id %>/delete" class="d-inline">
+                    <button class="btn btn-outline-danger" onclick="return confirm('Delete this coupon?')" title="Delete">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editCoupon<%= c.id %>" tabindex="-1">
+              <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow">
+                  <div class="modal-header bg-light border-bottom">
+                    <h6 class="modal-title fw-semibold">
+                      <i class="bi bi-pencil text-primary me-2"></i>Edit Coupon: <%= c.code %>
+                    </h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="POST" action="/admin/coupons/<%= c.id %>/update">
+                    <div class="modal-body p-4">
+                      <div class="row g-3">
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Coupon Code</label>
+                          <input type="text" name="code" class="form-control text-uppercase" value="<%= c.code %>" required style="text-transform:uppercase;"/>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Title</label>
+                          <input type="text" name="title" class="form-control" value="<%= c.title %>" required/>
+                        </div>
+                        <div class="col-12">
+                          <label class="form-label fw-medium">Description</label>
+                          <input type="text" name="description" class="form-control" value="<%= c.description || '' %>"/>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Discount Type</label>
+                          <select name="discount_type" class="form-select">
+                            <option value="percentage" <%= c.discount_type==='percentage'?'selected':'' %>>Percentage (%)</option>
+                            <option value="flat" <%= c.discount_type==='flat'?'selected':'' %>>Flat (₹)</option>
+                          </select>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Discount Value</label>
+                          <input type="number" name="discount_value" class="form-control" step="0.01" value="<%= c.discount_value %>" required/>
+                        </div>
+                        <div class="col-12">
+                          <label class="form-label fw-medium">Category</label>
+                          <select name="category_id" class="form-select">
+                            <option value="">🌐 Global (All Categories)</option>
+                            <% categories.forEach(cat => { %>
+                              <option value="<%= cat.id %>" <%= c.category_id==cat.id?'selected':'' %>><%= cat.name %></option>
+                            <% }) %>
+                          </select>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Min Order Amount</label>
+                          <input type="number" name="min_order_amount" class="form-control" step="0.01" value="<%= c.min_order_amount || 0 %>"/>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Max Discount (₹)</label>
+                          <input type="number" name="max_discount_amount" class="form-control" step="0.01" value="<%= c.max_discount_amount || '' %>" placeholder="No limit"/>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Total Usage Limit</label>
+                          <input type="number" name="usage_limit" class="form-control" value="<%= c.usage_limit || '' %>" placeholder="Unlimited"/>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Per User Limit</label>
+                          <input type="number" name="per_user_limit" class="form-control" value="<%= c.per_user_limit || 1 %>"/>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Start Date</label>
+                          <input type="datetime-local" name="start_date" class="form-control" value="<%= c.start_date ? new Date(c.start_date).toISOString().slice(0,16) : '' %>"/>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">End Date</label>
+                          <input type="datetime-local" name="end_date" class="form-control" value="<%= c.end_date ? new Date(c.end_date).toISOString().slice(0,16) : '' %>"/>
+                        </div>
+                        <div class="col-6">
+                          <label class="form-label fw-medium">Status</label>
+                          <select name="is_active" class="form-select">
+                            <option value="1" <%= c.is_active?'selected':'' %>>Active</option>
+                            <option value="0" <%= !c.is_active?'selected':'' %>>Inactive</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top">
+                      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-lg me-1"></i>Cancel
+                      </button>
+                      <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+          <% }) %>
+          <% if(!coupons.length){ %>
+            <tr>
+              <td colspan="7" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-ticket-perforated" style="font-size:2rem;"></i>
+                  <p class="mt-2 mb-0">No coupons created yet</p>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

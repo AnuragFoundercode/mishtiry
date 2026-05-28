@@ -1,0 +1,187 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+
+<!-- Back Button -->
+<a href="/admin/coupons" class="btn btn-sm btn-light mb-3">
+  <i class="bi bi-arrow-left me-1"></i>Back to Coupons
+</a>
+
+<div class="row g-4">
+  <!-- Coupon Info Card -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark">
+          <i class="bi bi-ticket-perforated me-2 text-primary"></i>Coupon Details
+        </h6>
+      </div>
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <div class="bg-primary bg-opacity-10 rounded-3 d-inline-flex align-items-center justify-content-center p-3 mb-2" style="width:70px;height:70px;">
+            <i class="bi bi-ticket-perforated-fill text-primary" style="font-size:2rem;"></i>
+          </div>
+          <h5 class="fw-bold mb-1"><%= coupon.code %></h5>
+          <p class="text-muted small mb-0"><%= coupon.title %></p>
+        </div>
+
+        <table class="table table-sm table-borderless">
+          <tbody>
+            <tr>
+              <td class="text-muted fw-medium">Discount</td>
+              <td class="fw-bold text-end">
+                <% if(coupon.discount_type === 'percentage') { %>
+                  <%= coupon.discount_value %>% OFF
+                <% } else { %>
+                  ₹<%= coupon.discount_value %> OFF
+                <% } %>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-medium">Category</td>
+              <td class="text-end">
+                <% if(coupon.Category) { %>
+                  <span class="badge bg-light text-dark border"><%= coupon.Category.name %></span>
+                <% } else { %>
+                  <span class="badge bg-success bg-opacity-10 text-success">🌐 Global</span>
+                <% } %>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-medium">Min Order</td>
+              <td class="text-end">₹<%= coupon.min_order_amount || 0 %></td>
+            </tr>
+            <% if(coupon.max_discount_amount) { %>
+            <tr>
+              <td class="text-muted fw-medium">Max Discount</td>
+              <td class="text-end">₹<%= coupon.max_discount_amount %></td>
+            </tr>
+            <% } %>
+            <tr>
+              <td class="text-muted fw-medium">Usage</td>
+              <td class="text-end">
+                <span class="fw-bold"><%= coupon.used_count %></span>
+                <% if(coupon.usage_limit) { %>
+                  / <%= coupon.usage_limit %>
+                <% } else { %>
+                  / ∞
+                <% } %>
+              </td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-medium">Per User</td>
+              <td class="text-end"><%= coupon.per_user_limit || 'Unlimited' %></td>
+            </tr>
+            <tr>
+              <td class="text-muted fw-medium">Status</td>
+              <td class="text-end">
+                <% if(coupon.is_active) { %>
+                  <span class="badge bg-success rounded-pill">Active</span>
+                <% } else { %>
+                  <span class="badge bg-secondary rounded-pill">Inactive</span>
+                <% } %>
+              </td>
+            </tr>
+            <% if(coupon.start_date) { %>
+            <tr>
+              <td class="text-muted fw-medium">Start</td>
+              <td class="text-end small"><%= new Date(coupon.start_date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) %></td>
+            </tr>
+            <% } %>
+            <% if(coupon.end_date) { %>
+            <tr>
+              <td class="text-muted fw-medium">Expires</td>
+              <td class="text-end small"><%= new Date(coupon.end_date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) %></td>
+            </tr>
+            <% } %>
+            <% if(coupon.description) { %>
+            <tr>
+              <td class="text-muted fw-medium">Description</td>
+              <td class="text-end small"><%= coupon.description %></td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usage History -->
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <div class="d-flex justify-content-between align-items-center">
+          <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Usage History
+          </h6>
+          <span class="badge bg-primary"><%= usages.length %> uses</span>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>User</th>
+              <th>Booking</th>
+              <th>Discount Given</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+          <% usages.forEach((u, i) => { %>
+            <tr>
+              <td class="text-muted small fw-medium"><%= i+1 %></td>
+              <td>
+                <% if(u.User) { %>
+                  <span class="fw-medium"><%= u.User.name || 'N/A' %></span>
+                  <br><small class="text-muted"><%= u.User.mobile %></small>
+                <% } else { %>
+                  <span class="text-muted">Deleted User</span>
+                <% } %>
+              </td>
+              <td>
+                <% if(u.Booking) { %>
+                  <a href="/admin/bookings/<%= u.Booking.id %>" class="text-primary fw-medium">#<%= u.Booking.id %></a>
+                  <br><small class="text-muted">₹<%= u.Booking.total_amount %></small>
+                <% } else { %>
+                  <span class="text-muted">-</span>
+                <% } %>
+              </td>
+              <td>
+                <span class="fw-bold text-success">-₹<%= u.discount_amount %></span>
+              </td>
+              <td>
+                <small class="text-muted"><%= new Date(u.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) %></small>
+              </td>
+            </tr>
+          <% }) %>
+          <% if(!usages.length){ %>
+            <tr>
+              <td colspan="5" class="text-center py-5">
+                <div class="text-muted">
+                  <i class="bi bi-clock-history" style="font-size:2rem;"></i>
+                  <p class="mt-2 mb-0">No usage history yet</p>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

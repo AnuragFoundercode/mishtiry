@@ -12,6 +12,9 @@ const Booking = sequelize.define('Booking', {
   address: { type: DataTypes.TEXT },
   address_id: { type: DataTypes.INTEGER, allowNull: true },
   slot_id: { type: DataTypes.INTEGER, allowNull: true },
+  coupon_id: { type: DataTypes.INTEGER, allowNull: true },
+  coupon_code: { type: DataTypes.STRING(50), allowNull: true },
+  coupon_discount: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },
   status: {
     type: DataTypes.ENUM('pending', 'accepted', 'in_progress', 'completed', 'cancelled'),
     defaultValue: 'pending',

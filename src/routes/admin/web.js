@@ -89,4 +89,12 @@ router.post('/slots', guard, ctrl.createSlotWeb);
 router.post('/slots/:id/update', guard, ctrl.updateSlotWeb);
 router.post('/slots/:id/delete', guard, ctrl.deleteSlotWeb);
 
+// Coupons
+router.get('/coupons', guard, ctrl.coupons);
+router.get('/coupons/:id', guard, ctrl.couponDetail);
+router.post('/coupons', guard, ctrl.createCouponWeb);
+router.post('/coupons/:id/update', guard, ctrl.updateCouponWeb);
+router.post('/coupons/:id/delete', guard, ctrl.deleteCouponWeb);
+router.post('/coupons/:id/toggle', guard, ctrl.toggleCouponWeb);
+
 module.exports = router;

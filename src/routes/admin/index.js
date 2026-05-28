@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const adminCtrl = require('../../controllers/admin/admin.controller');
 const slotCtrl = require('../../controllers/admin/slot.controller');
+const couponCtrl = require('../../controllers/admin/coupon.controller');
 const { authenticate, authorize } = require('../../middlewares/auth.middleware');
 
 router.use(authenticate, authorize('admin'));
@@ -41,5 +42,13 @@ router.get('/slots', slotCtrl.getSlots);
 router.post('/slots', slotCtrl.createSlot);
 router.put('/slots/:id', slotCtrl.updateSlot);
 router.delete('/slots/:id', slotCtrl.deleteSlot);
+
+// Coupons
+router.get('/coupons', couponCtrl.getCoupons);
+router.get('/coupons/:id', couponCtrl.getCouponDetail);
+router.post('/coupons', couponCtrl.createCoupon);
+router.put('/coupons/:id', couponCtrl.updateCoupon);
+router.delete('/coupons/:id', couponCtrl.deleteCoupon);
+router.patch('/coupons/:id/toggle', couponCtrl.toggleCoupon);
 
 module.exports = router;

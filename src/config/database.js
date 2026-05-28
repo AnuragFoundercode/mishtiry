@@ -10,6 +10,7 @@ const sequelize = new Sequelize(
     port: process.env.DB_PORT,
     dialect: 'mysql',
     logging: false, // Disable SQL query logs
+    timezone: '+05:30', // IST
     pool: { max: 10, min: 0, acquire: 30000, idle: 10000 },
   }
 );

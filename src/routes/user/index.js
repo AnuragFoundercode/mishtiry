@@ -44,4 +44,8 @@ router.get('/bookings/:id', ...auth, bookingCtrl.getBookingDetail);
 router.get('/bookings/:id/payment-verify', ...auth, bookingCtrl.verifyPayment);
 router.post('/bookings/:id/cancel', ...auth, bookingCtrl.cancelBooking);
 
+// Coupons
+router.get('/coupons', ...auth, bookingCtrl.listCoupons);
+router.post('/coupons/validate', ...auth, bookingCtrl.applyCoupon);
+
 module.exports = router;

@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const {
   User, Booking, Category, Service, Notification,
-  Policy, Zone, Worker, Slot,
+  Policy, Zone, Worker, Slot, Coupon, CouponUsage,
 } = require('../../models/index');
 const PlatformSetting = require('../../models/platform_setting.model');
 const { sendEmailNotification } = require('../../helpers/notification.helper');
@@ -724,6 +724,144 @@ const deleteSlotWeb = async (req, res) => {
   } catch (e) { req.flash('error', e.message); res.redirect('/admin/slots'); }
 };
 
+// ─── Coupons ──────────────────────────────────────────────────────────────────
+const coupons = async (req, res) => {
+  try {
+    const allCoupons = await Coupon.findAll({
+      include: [{ model: Category, attributes: ['id', 'name'], required: false }],
+      order: [['created_at', 'DESC']],
+    });
+    const categories = await Category.findAll({ where: { is_active: true }, order: [['name', 'ASC']] });
+    res.render('admin/coupons', {
+      title: 'Coupons', page: 'coupons',
+      coupons: allCoupons, categories,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
+
+const createCouponWeb = async (req, res) => {
+  try {
+    const {
+      code, title, description, discount_type, discount_value,
+      category_id, min_order_amount, max_discount_amount,
+      usage_limit, per_user_limit, start_date, end_date,
+    } = req.body;
+
+    if (!code || !title || !discount_value) {
+      req.flash('error', 'Code, title, and discount value are required');
+      return res.redirect('/admin/coupons');
+    }
+
+    const existing = await Coupon.findOne({ where: { code: code.toUpperCase() } });
+    if (existing) {
+      req.flash('error', 'Coupon code already exists');
+      return res.redirect('/admin/coupons');
+    }
+
+    await Coupon.create({
+      code: code.toUpperCase(),
+      title,
+      description: description || null,
+      discount_type: discount_type || 'percentage',
+      discount_value: parseFloat(discount_value),
+      category_id: category_id || null,
+      min_order_amount: min_order_amount ? parseFloat(min_order_amount) : 0,
+      max_discount_amount: max_discount_amount ? parseFloat(max_discount_amount) : null,
+      usage_limit: usage_limit ? parseInt(usage_limit) : null,
+      per_user_limit: per_user_limit ? parseInt(per_user_limit) : 1,
+      start_date: start_date || null,
+      end_date: end_date || null,
+      is_active: true,
+    });
+
+    req.flash('success', 'Coupon created successfully');
+    res.redirect('/admin/coupons');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/coupons'); }
+};
+
+const updateCouponWeb = async (req, res) => {
+  try {
+    const coupon = await Coupon.findByPk(req.params.id);
+    if (!coupon) { req.flash('error', 'Coupon not found'); return res.redirect('/admin/coupons'); }
+
+    const {
+      code, title, description, discount_type, discount_value,
+      category_id, min_order_amount, max_discount_amount,
+      usage_limit, per_user_limit, start_date, end_date, is_active,
+    } = req.body;
+
+    // Check duplicate code if changed
+    if (code && code.toUpperCase() !== coupon.code) {
+      const existing = await Coupon.findOne({ where: { code: code.toUpperCase() } });
+      if (existing) { req.flash('error', 'Coupon code already exists'); return res.redirect('/admin/coupons'); }
+    }
+
+    await coupon.update({
+      code: code ? code.toUpperCase() : coupon.code,
+      title: title || coupon.title,
+      description: description !== undefined ? description : coupon.description,
+      discount_type: discount_type || coupon.discount_type,
+      discount_value: discount_value ? parseFloat(discount_value) : coupon.discount_value,
+      category_id: category_id || null,
+      min_order_amount: min_order_amount ? parseFloat(min_order_amount) : 0,
+      max_discount_amount: max_discount_amount ? parseFloat(max_discount_amount) : null,
+      usage_limit: usage_limit ? parseInt(usage_limit) : null,
+      per_user_limit: per_user_limit ? parseInt(per_user_limit) : 1,
+      start_date: start_date || null,
+      end_date: end_date || null,
+      is_active: is_active === '1' || is_active === 'true',
+    });
+
+    req.flash('success', 'Coupon updated successfully');
+    res.redirect('/admin/coupons');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/coupons'); }
+};
+
+const deleteCouponWeb = async (req, res) => {
+  try {
+    await Coupon.destroy({ where: { id: req.params.id } });
+    req.flash('success', 'Coupon deleted');
+    res.redirect('/admin/coupons');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/coupons'); }
+};
+
+const toggleCouponWeb = async (req, res) => {
+  try {
+    const coupon = await Coupon.findByPk(req.params.id);
+    if (coupon) await coupon.update({ is_active: !coupon.is_active });
+    req.flash('success', `Coupon ${coupon.is_active ? 'activated' : 'deactivated'}`);
+    res.redirect('/admin/coupons');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/coupons'); }
+};
+
+const couponDetail = async (req, res) => {
+  try {
+    const coupon = await Coupon.findByPk(req.params.id, {
+      include: [{ model: Category, attributes: ['id', 'name'], required: false }],
+    });
+    if (!coupon) { req.flash('error', 'Coupon not found'); return res.redirect('/admin/coupons'); }
+
+    const usages = await CouponUsage.findAll({
+      where: { coupon_id: coupon.id },
+      include: [
+        { model: User, attributes: ['id', 'name', 'mobile'] },
+        { model: Booking, attributes: ['id', 'total_amount', 'created_at'] },
+      ],
+      order: [['created_at', 'DESC']],
+      limit: 50,
+    });
+
+    res.render('admin/coupon-detail', {
+      title: `Coupon: ${coupon.code}`, page: 'coupons',
+      coupon, usages,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
+
 module.exports = {
   showLogin, doLogin, doLogout,
   showForgotPassword, doForgotPassword, showResetPassword, doResetPassword,
@@ -740,4 +878,5 @@ module.exports = {
   zones, createZone, updateZone, deleteZone,
   workers, createWorker, workerDetail, toggleBlockWorker, assignWorker,
   slots, createSlotWeb, updateSlotWeb, deleteSlotWeb,
+  coupons, createCouponWeb, updateCouponWeb, deleteCouponWeb, toggleCouponWeb, couponDetail,
 };
