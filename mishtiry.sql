@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: May 14, 2026 at 12:09 PM
+-- Generation Time: May 28, 2026 at 12:02 PM
 -- Server version: 10.11.6-MariaDB-log
 -- PHP Version: 8.3.30
 
@@ -24,29 +24,65 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `addresses`
+--
+
+CREATE TABLE `addresses` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `label` varchar(50) DEFAULT 'Home',
+  `full_address` text NOT NULL,
+  `landmark` varchar(255) DEFAULT NULL,
+  `latitude` decimal(10,8) DEFAULT NULL,
+  `longitude` decimal(11,8) DEFAULT NULL,
+  `city` varchar(100) DEFAULT NULL,
+  `state` varchar(100) DEFAULT NULL,
+  `pincode` varchar(10) DEFAULT NULL,
+  `is_default` tinyint(1) DEFAULT 0,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `addresses`
+--
+
+INSERT INTO `addresses` (`id`, `user_id`, `label`, `full_address`, `landmark`, `latitude`, `longitude`, `city`, `state`, `pincode`, `is_default`, `created_at`, `updated_at`) VALUES
+(5, 2, 'Work', '126, Jankipuram, Near City Mall, lucknow, UttarPradesh.', 'Jankipuram', 26.94320331, 80.94016817, 'lucknow', 'Uttar Pardesh', '787567', 0, '2026-05-27 04:56:14', '2026-05-27 08:07:09'),
+(6, 2, 'Office11', '456, Vijay Nagar, AB Road, Indore, Madhya Pradesh', 'Near Bombay Hospital', 22.75330000, 75.89370000, 'Indore', 'Madhya Pradesh', '452010', 0, '2026-05-27 04:57:39', '2026-05-27 08:07:09'),
+(9, 2, 'Home', '123, Shanti Nagar, Near City Mall, Indore, Madhya Pradesh', 'Opposite SBI Bank', 22.71960000, 75.85770000, 'Indore', 'Madhya Pradesh', '452001', 1, '2026-05-27 08:07:09', '2026-05-27 08:07:09'),
+(12, 22, 'WWVQ+HW2', 'WWVQ+HW2, Jankipuram Extension, Malookpur, 226031', 'WWVQ+HW2', 26.94340205, 80.93964815, 'Malookpur', 'Uttar Pradesh', '226031', 0, '2026-05-27 09:25:57', '2026-05-27 09:28:33'),
+(13, 22, 'WWVQ+HW2', 'WWVQ+HW2, Jankipuram Extension, Malookpur, 226031', 'WWVQ+HW2', 26.94340205, 80.93964815, 'Malookpur', 'Uttar Pradesh', '226031', 0, '2026-05-27 09:26:45', '2026-05-27 09:28:33'),
+(15, 22, 'WWVQ+HW2', 'WWVQ+HW2, Jankipuram Extension, Malookpur, 226031', 'WWVQ+HW2', 26.94347587, 80.93961529, 'Malookpur', 'Uttar Pradesh', '226031', 1, '2026-05-27 09:28:33', '2026-05-27 09:28:33');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `bookings`
 --
 
 CREATE TABLE `bookings` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `vendor_id` int(11) NOT NULL,
+  `worker_id` int(11) DEFAULT NULL,
   `service_id` int(11) NOT NULL,
   `booking_date` datetime NOT NULL,
   `notes` text DEFAULT NULL,
   `address` text DEFAULT NULL,
+  `address_id` int(11) DEFAULT NULL,
+  `slot_id` int(11) DEFAULT NULL,
   `zone_id` int(11) DEFAULT NULL,
   `status` enum('pending','accepted','in_progress','completed','cancelled') DEFAULT 'pending',
   `amount` decimal(10,2) DEFAULT NULL,
   `platform_charge` decimal(10,2) DEFAULT 0.00,
   `gst_amount` decimal(10,2) DEFAULT 0.00,
   `total_amount` decimal(10,2) DEFAULT 0.00,
-  `commission_amount` decimal(10,2) DEFAULT 0.00,
-  `commission_percent_applied` decimal(5,2) DEFAULT 0.00,
-  `vendor_payout` decimal(10,2) DEFAULT 0.00,
-  `revenue_model_applied` varchar(20) DEFAULT NULL,
   `payment_status` enum('pending','paid','refunded') DEFAULT 'pending',
   `payment_id` varchar(255) DEFAULT NULL,
+  `cf_order_id` varchar(255) DEFAULT NULL,
+  `payment_method` enum('online','cod') DEFAULT 'online',
+  `cod_collected` decimal(10,2) DEFAULT 0.00,
+  `admin_due` decimal(10,2) DEFAULT 0.00,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
@@ -55,10 +91,25 @@ CREATE TABLE `bookings` (
 -- Dumping data for table `bookings`
 --
 
-INSERT INTO `bookings` (`id`, `user_id`, `vendor_id`, `service_id`, `booking_date`, `notes`, `address`, `zone_id`, `status`, `amount`, `platform_charge`, `gst_amount`, `total_amount`, `commission_amount`, `commission_percent_applied`, `vendor_payout`, `revenue_model_applied`, `payment_status`, `payment_id`, `created_at`, `updated_at`) VALUES
-(43, 2, 1, 1, '2024-01-15 10:00:00', 'Kitchen tap is leaking badly', 'A-123, Lajpat Nagar, Delhi', 6, 'completed', 299.00, 14.95, 53.82, 367.77, 29.90, 0.00, 0.00, NULL, 'paid', NULL, '2026-05-12 07:52:12', '2026-05-12 07:52:12'),
-(44, 2, 6, 20, '2024-01-22 11:00:00', 'AC not cooling, need repair', 'A-123, Lajpat Nagar, Delhi', 6, 'in_progress', 899.00, 44.95, 161.82, 1105.77, 89.90, 0.00, 0.00, NULL, 'paid', NULL, '2026-05-12 07:52:12', '2026-05-13 12:07:16'),
-(45, 4, 5, 16, '2024-01-25 10:00:00', 'Paint living room walls', 'C-789, Dwarka, Delhi', 6, 'accepted', 2999.00, 149.95, 539.82, 3688.77, 299.90, 0.00, 0.00, NULL, 'pending', NULL, '2026-05-12 07:52:12', '2026-05-13 12:06:54');
+INSERT INTO `bookings` (`id`, `user_id`, `worker_id`, `service_id`, `booking_date`, `notes`, `address`, `address_id`, `slot_id`, `zone_id`, `status`, `amount`, `platform_charge`, `gst_amount`, `total_amount`, `payment_status`, `payment_id`, `cf_order_id`, `payment_method`, `cod_collected`, `admin_due`, `created_at`, `updated_at`) VALUES
+(43, 2, 1, 1, '2024-01-15 10:00:00', 'Kitchen tap is leaking badly', 'A-123, Lajpat Nagar, Delhi', NULL, NULL, 6, 'accepted', 299.00, 14.95, 53.82, 367.77, 'paid', NULL, NULL, 'online', 0.00, 0.00, '2026-05-12 07:52:12', '2026-05-22 07:57:29'),
+(44, 2, NULL, 20, '2024-01-22 11:00:00', 'AC not cooling, need repair', 'A-123, Lajpat Nagar, Delhi', NULL, NULL, 6, 'in_progress', 899.00, 44.95, 161.82, 1105.77, 'paid', NULL, NULL, 'online', 0.00, 0.00, '2026-05-12 07:52:12', '2026-05-13 12:07:16'),
+(45, 4, NULL, 16, '2024-01-25 10:00:00', 'Paint living room walls', 'C-789, Dwarka, Delhi', NULL, NULL, 6, 'accepted', 2999.00, 149.95, 539.82, 3688.77, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-12 07:52:12', '2026-05-13 12:06:54'),
+(46, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'cod', 0.00, 0.00, '2026-05-22 10:02:56', '2026-05-22 10:02:56'),
+(47, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 10:03:33', '2026-05-22 10:03:33'),
+(48, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 10:18:33', '2026-05-22 10:18:33'),
+(49, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 10:20:07', '2026-05-22 10:20:07'),
+(50, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 10:20:29', '2026-05-22 10:20:29'),
+(51, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 11:19:55', '2026-05-22 11:19:55'),
+(52, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 11:20:01', '2026-05-22 11:20:01'),
+(53, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 11:35:32', '2026-05-22 11:35:32'),
+(54, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 11:36:06', '2026-05-22 11:36:06'),
+(55, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 11:40:22', '2026-05-22 11:40:22'),
+(56, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 11:41:32', '2026-05-22 11:41:32'),
+(57, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'cod', 0.00, 0.00, '2026-05-22 11:41:44', '2026-05-22 11:41:44'),
+(58, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, NULL, 'online', 0.00, 0.00, '2026-05-22 11:41:57', '2026-05-22 11:41:57'),
+(59, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, '2209127448', 'online', 0.00, 0.00, '2026-05-22 11:43:25', '2026-05-22 11:43:27'),
+(60, 2, NULL, 1, '2026-06-15 10:00:00', 'Please bring tools', '123, MG Road, Delhi', NULL, NULL, NULL, 'pending', 299.00, 14.95, 2.69, 316.64, 'pending', NULL, '2209127472', 'online', 0.00, 0.00, '2026-05-22 11:45:09', '2026-05-22 11:45:10');
 
 -- --------------------------------------------------------
 
@@ -81,36 +132,12 @@ CREATE TABLE `categories` (
 --
 
 INSERT INTO `categories` (`id`, `name`, `parent_id`, `image`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'Home Services', NULL, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:55:31'),
-(2, 'Plumbing', 1, '1778673388371-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:56:31'),
-(3, 'Electrical', 1, '1778673408602-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:56:51'),
-(4, 'Cleaning', 1, '1778673429936-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:57:12'),
-(5, 'Carpentry', 1, '1778673455116-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:57:38'),
-(6, 'Painting', 1, '1778673484674-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:58:07'),
-(7, 'AC Repair', 1, '1778673505176-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:58:28'),
-(8, 'Appliance Repair', 1, '1778673519006-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:58:41'),
-(9, 'Beauty & Wellness', NULL, '1778673533917-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:58:56'),
-(10, 'Salon at Home', 9, '1778673547026-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:59:09'),
-(11, 'Massage', 9, '1778673570041-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:59:32'),
-(12, 'Fitness', 9, '1778673587877-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 11:59:50'),
-(13, 'Vehicle Services', NULL, '1778673637395-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 12:00:40'),
-(14, 'Car Wash', 13, '1778673674385-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 12:01:17'),
-(15, 'Bike Service', 13, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:08:47', '2026-05-13 12:01:34'),
-(16, 'Home Services', NULL, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:37'),
-(17, 'Plumbing', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:39'),
-(18, 'Electrical', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:42'),
-(19, 'Cleaning', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:44'),
-(20, 'Carpentry', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:47'),
-(21, 'Painting', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:51'),
-(22, 'AC Repair', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:53'),
-(23, 'Appliance Repair', 1, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:56'),
-(24, 'Beauty & Wellness', NULL, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:01:59'),
-(25, 'Salon at Home', 9, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:02'),
-(26, 'Massage', 9, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:22'),
-(27, 'Fitness', 9, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:25'),
-(28, 'Vehicle Services', NULL, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:28'),
-(29, 'Car Wash', 13, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:31'),
-(30, 'Bike Service', 13, '1778673301519-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 1, '2026-05-12 07:10:34', '2026-05-13 12:02:34');
+(33, 'Cleaning Service', NULL, '1779436395228-clean.webp', 1, '2026-05-20 10:46:01', '2026-05-22 07:53:15'),
+(34, 'Beauty & Salon', NULL, '1779436383689-salon.webp', 1, '2026-05-20 10:46:35', '2026-05-22 07:53:03'),
+(35, 'Plumbing', NULL, '1779436353938-plumber.webp', 1, '2026-05-20 10:46:59', '2026-05-22 07:52:34'),
+(36, 'Appliance Repair', NULL, '1779436336180-aplience_repair.webp', 1, '2026-05-20 10:47:15', '2026-05-22 07:52:16'),
+(37, 'Electrician', NULL, '1779436323550-eletric.webp', 1, '2026-05-20 10:47:52', '2026-05-22 07:52:03'),
+(38, 'Carpenter', NULL, '1779436300725-carpanerter.webp', 1, '2026-05-20 10:48:23', '2026-05-22 07:51:40');
 
 -- --------------------------------------------------------
 
@@ -154,13 +181,13 @@ CREATE TABLE `notifications` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `title` varchar(200) DEFAULT NULL,
-  `body` text DEFAULT NULL,
+  `body` mediumtext DEFAULT NULL,
   `type` enum('booking','payment','promotional','system') DEFAULT 'system',
   `is_read` tinyint(1) DEFAULT 0,
-  `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`data`)),
+  `data` longtext DEFAULT NULL CHECK (json_valid(`data`)),
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `notifications`
@@ -173,7 +200,13 @@ INSERT INTO `notifications` (`id`, `user_id`, `title`, `body`, `type`, `is_read`
 (4, 4, 'Payment Successful', 'Payment of ₹1843.77 received for deep cleaning service', 'payment', 1, NULL, '2026-05-12 07:56:58', '2026-05-12 07:56:58'),
 (5, 7, 'New Booking', 'You have received a new booking for tap repair service', 'booking', 1, NULL, '2026-05-12 07:56:58', '2026-05-12 07:56:58'),
 (6, 8, 'Payment Received', 'Payment of ₹490.77 has been credited to your account', 'payment', 1, NULL, '2026-05-12 07:56:58', '2026-05-12 07:56:58'),
-(7, 9, 'Subscription Expiring', 'Your Pro plan subscription expires in 5 days. Renew now!', 'system', 0, NULL, '2026-05-12 07:56:58', '2026-05-12 07:56:58');
+(7, 9, 'Subscription Expiring', 'Your Pro plan subscription expires in 5 days. Renew now!', 'system', 0, NULL, '2026-05-12 07:56:58', '2026-05-12 07:56:58'),
+(8, 10, '🔔 Subscription Renewal Reminder', 'Your basic plan expires on 19/5/2026 (5 days left). Renew now to stay active.', 'system', 0, NULL, '2026-05-14 06:11:07', '2026-05-14 06:11:07'),
+(9, 11, '🔔 Subscription Renewal Reminder', 'Your pro plan expires on 17/5/2026 (3 days left). Renew now to stay active.', 'system', 0, NULL, '2026-05-14 06:11:07', '2026-05-14 06:11:07'),
+(10, 11, '🔔 Subscription Renewal Reminder', 'Your pro plan expires on 17/5/2026 (3 days left). Renew now to stay active.', 'system', 0, NULL, '2026-05-14 06:11:18', '2026-05-14 06:11:18'),
+(11, 8, '🔔 Subscription Renewal Reminder', 'Your basic plan expires on 14/6/2026 (31 days left). Renew now to stay active.', 'system', 0, NULL, '2026-05-14 06:11:23', '2026-05-14 06:11:23'),
+(12, 7, '🔔 Subscription Renewal Reminder', 'Your pro plan expires on 14/6/2026 (31 days left). Renew now to stay active.', 'system', 0, NULL, '2026-05-14 06:12:32', '2026-05-14 06:12:32'),
+(13, 2, 'Worker Assigned', 'Anurag Pandey has been assigned to your booking #43', 'booking', 0, '{\"bookingId\":43}', '2026-05-22 07:57:29', '2026-05-22 07:57:29');
 
 -- --------------------------------------------------------
 
@@ -190,6 +223,29 @@ CREATE TABLE `otps` (
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
+
+--
+-- Dumping data for table `otps`
+--
+
+INSERT INTO `otps` (`id`, `mobile`, `otp`, `expires_at`, `is_used`, `created_at`, `updated_at`) VALUES
+(7, '8855688255', '111111', '2026-05-20 05:05:56', 0, '2026-05-20 05:00:57', '2026-05-20 05:00:57'),
+(10, '8840928016', '111111', '2026-05-20 05:10:37', 0, '2026-05-20 05:05:38', '2026-05-20 05:05:38'),
+(11, '8544554855', '111111', '2026-05-20 05:12:24', 0, '2026-05-20 05:07:26', '2026-05-20 05:07:26'),
+(12, '8840958095', '111111', '2026-05-20 05:44:40', 0, '2026-05-20 05:39:41', '2026-05-20 05:39:41'),
+(13, '8555888899', '111111', '2026-05-20 05:46:49', 0, '2026-05-20 05:41:50', '2026-05-20 05:41:50'),
+(16, '8840958016', '111111', '2026-05-20 05:53:24', 0, '2026-05-20 05:48:25', '2026-05-20 05:48:25'),
+(17, '8855555558', '111111', '2026-05-20 06:01:06', 0, '2026-05-20 05:56:07', '2026-05-20 05:56:07'),
+(19, '8840958855', '1111', '2026-05-20 06:09:53', 1, '2026-05-20 06:04:54', '2026-05-20 06:05:04'),
+(21, '8555588665', '1111', '2026-05-20 06:16:02', 1, '2026-05-20 06:11:03', '2026-05-20 06:11:11'),
+(22, '8840958019', '1111', '2026-05-20 06:19:34', 1, '2026-05-20 06:14:35', '2026-05-20 06:14:39'),
+(23, '8885585588', '1111', '2026-05-20 06:20:47', 1, '2026-05-20 06:15:48', '2026-05-20 06:15:55'),
+(25, '8375895787', '1111', '2026-05-20 07:41:08', 1, '2026-05-20 07:36:09', '2026-05-20 07:37:18'),
+(39, '7081472797', '1111', '2026-05-25 04:28:56', 1, '2026-05-25 04:23:57', '2026-05-25 04:24:14'),
+(44, '8090145106', '1111', '2026-05-25 11:23:22', 1, '2026-05-25 11:18:23', '2026-05-25 11:18:38'),
+(48, '8840980168', '1111', '2026-05-26 17:54:01', 1, '2026-05-26 17:49:02', '2026-05-26 17:49:08'),
+(49, '3758493023', '1111', '2026-05-26 18:15:11', 1, '2026-05-26 18:10:12', '2026-05-26 18:10:17'),
+(55, '9876543210', '1111', '2026-05-27 11:39:38', 1, '2026-05-27 11:34:39', '2026-05-27 11:34:42');
 
 -- --------------------------------------------------------
 
@@ -274,13 +330,20 @@ INSERT INTO `reviews` (`id`, `user_id`, `vendor_id`, `booking_id`, `rating`, `re
 
 CREATE TABLE `services` (
   `id` int(11) NOT NULL,
-  `vendor_id` int(11) NOT NULL,
   `category_id` int(11) NOT NULL,
   `name` varchar(200) NOT NULL,
   `description` text DEFAULT NULL,
   `price` decimal(10,2) NOT NULL,
   `estimated_time` varchar(50) DEFAULT NULL,
   `images` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`images`)),
+  `faqs` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`faqs`)),
+  `includes` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`includes`)),
+  `how_its_done` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`how_its_done`)),
+  `does_not_include` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`does_not_include`)),
+  `rating` decimal(2,1) DEFAULT 0.0,
+  `rating_count` int(11) DEFAULT 0,
+  `discount_percent` decimal(5,2) DEFAULT 0.00,
+  `final_price` decimal(10,2) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
@@ -290,33 +353,9 @@ CREATE TABLE `services` (
 -- Dumping data for table `services`
 --
 
-INSERT INTO `services` (`id`, `vendor_id`, `category_id`, `name`, `description`, `price`, `estimated_time`, `images`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, 'Tap Repair/Replacement', 'Fix leaky taps, replace old taps with new ones', 299.00, '1-2 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(2, 1, 2, 'Pipe Leak Repair', 'Emergency pipe leak fixing, pipe replacement', 499.00, '2-3 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(3, 1, 2, 'Toilet Installation', 'Complete toilet installation and fitting', 899.00, '3-4 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(4, 1, 2, 'Water Tank Cleaning', 'Thorough cleaning of overhead and underground tanks', 799.00, '2-3 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(5, 2, 3, 'Fan Installation', 'Ceiling fan installation with wiring', 399.00, '1-2 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(6, 2, 3, 'Switch/Socket Repair', 'Fix or replace electrical switches and sockets', 199.00, '30 min - 1 hour', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(7, 2, 3, 'Wiring Work', 'New electrical wiring for rooms', 1299.00, '4-6 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(8, 2, 3, 'MCB/Fuse Box Repair', 'Electrical panel and MCB replacement', 699.00, '2-3 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(9, 3, 4, 'Deep House Cleaning', 'Complete house deep cleaning service', 1499.00, '4-6 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(10, 3, 4, 'Bathroom Cleaning', 'Specialized bathroom deep cleaning', 599.00, '1-2 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(11, 3, 4, 'Kitchen Cleaning', 'Complete kitchen cleaning including appliances', 799.00, '2-3 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(12, 3, 4, 'Sofa Cleaning', 'Professional sofa and upholstery cleaning', 899.00, '2-3 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(13, 4, 5, 'Furniture Repair', 'Repair and restoration of wooden furniture', 599.00, '2-4 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(14, 4, 5, 'Custom Shelves', 'Design and install custom wooden shelves', 1299.00, '4-6 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(15, 4, 5, 'Door/Window Repair', 'Fix doors, windows, and locks', 799.00, '2-3 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(16, 5, 6, 'Room Painting', 'Interior room painting (per room)', 2999.00, '1-2 days', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(17, 5, 6, 'Wall Touch-up', 'Small wall repairs and touch-up painting', 799.00, '2-4 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(18, 5, 6, 'Exterior Painting', 'House exterior painting', 8999.00, '3-5 days', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(19, 6, 7, 'AC Installation', 'Split AC installation with piping', 1999.00, '3-4 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(20, 6, 7, 'AC Repair', 'AC not cooling, gas filling, general repair', 899.00, '1-2 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(21, 6, 7, 'AC Cleaning', 'Deep cleaning of AC unit', 599.00, '1-2 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(22, 7, 10, 'Haircut & Styling', 'Professional haircut and styling at home', 499.00, '1 hour', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(23, 7, 10, 'Facial Treatment', 'Relaxing facial treatment', 899.00, '1.5 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(24, 7, 10, 'Manicure & Pedicure', 'Complete nail care service', 699.00, '1.5 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(25, 8, 14, 'Car Wash', 'External car washing and cleaning', 299.00, '30-45 min', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(26, 8, 14, 'Car Detailing', 'Complete interior and exterior detailing', 1299.00, '2-3 hours', NULL, 1, '2026-05-12 07:08:47', '2026-05-12 07:08:47');
+INSERT INTO `services` (`id`, `category_id`, `name`, `description`, `price`, `estimated_time`, `images`, `faqs`, `includes`, `how_its_done`, `does_not_include`, `rating`, `rating_count`, `discount_percent`, `final_price`, `is_active`, `created_at`, `updated_at`) VALUES
+(27, 36, 'Appliance Repair', 'We provide expert appliance repair services for all major home appliances including air conditioners, refrigerators, washing machines, microwaves, and TVs. Our skilled technicians ensure quick diagnosis and efficient repair using quality parts.', 599.00, '3', '[\"1779452411894-aplience_repair.webp\"]', '[{\"question\":\"How long does it work?\",\"answer\":\"usually 2-3 hours\"}]', NULL, NULL, NULL, 0.0, 0, 7.00, 557.07, 1, '2026-05-22 12:20:12', '2026-05-25 05:41:34'),
+(28, 34, 'Bridal Makeup Package', 'Professional bridal makeup service including HD makeup, hairstyling, and draping for your special day.', 7999.00, '4', '[\"1779691396949-ChatGPT_Image_May_25,_2026,_12_12_52_PM.webp\"]', '[{\"question\":\"How long does it take?\",\"answer\":\"Around 3-4 hours depending on the look\"},{\"question\":\"Do you provide products?\",\"answer\":\"Yes, all makeup products are provided\"},{\"question\":\"Can I choose my hairstyle?\",\"answer\":\"Yes, you can select your preferred style\"},{\"question\":\"Is a trial included?\",\"answer\":\"Trial can be added at extra cost\"}]', '[\"HD bridal makeup\",\"Hair styling (bun/ curls/ straightening)\",\"Saree/dupatta draping\",\"Skin prep & base correction\",\"False eyelashes application\"]', '[\"Consultation and skin analysis\",\"Face cleansing and skin prep\",\"Makeup application using HD products\",\"Hairstyling as per chosen look\",\"Final touch-up and setting spray\"]', '[\"Pre-bridal skin treatments\",\"Hair coloring\",\"Outstation travel charges\",\"Additional makeup for guests\"]', 0.0, 0, 15.00, 6799.15, 1, '2026-05-25 06:43:17', '2026-05-25 06:43:17');
 
 -- --------------------------------------------------------
 
@@ -342,7 +381,35 @@ CREATE TABLE `sliders` (
 --
 
 INSERT INTO `sliders` (`id`, `title`, `subtitle`, `image`, `type`, `link`, `sort_order`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'BOOK NOW', 'its a very useful application', '1778668451036-ChatGPT_Image_May_13,_2026,_03_20_35_PM.png', 'both', '', 1, 1, '2026-05-13 10:34:14', '2026-05-13 10:34:14');
+(1, 'BOOK NOW', 'its a very useful application', '1779436545837-ChatGPT_Image_May_20,_2026,_03_45_10_PM.webp', 'both', '', 1, 1, '2026-05-13 10:34:14', '2026-05-22 07:55:46'),
+(2, 'SUPER SAVING', 'up 80% off', '1779436458981-40.webp', 'user', '', 2, 1, '2026-05-20 10:22:23', '2026-05-22 07:54:19'),
+(3, 'BRING ORDER TO EVERY SELF', 'neat fresh sorted', '1779436473149-3d3c5108-db1b-41ca-a875-b0ed7daf0ac9.webp', 'user', '', 3, 1, '2026-05-20 10:23:29', '2026-05-22 07:54:33'),
+(4, 'BRING ORDER TO EVERY SELF', 'neat, fresh, sorted', '1779436487728-ChatGPT_Image_May_20,_2026,_03_45_04_PM.webp', 'user', '', 4, 1, '2026-05-20 10:24:11', '2026-05-22 07:54:47'),
+(5, 'BRING ORDER TO EVERY SELF', 'neat, fresh, sorted', '1779436506432-ChatGPT_Image_May_20,_2026,_11_57_26_AM.webp', 'user', '', 5, 1, '2026-05-20 10:24:37', '2026-05-22 07:55:06');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `slots`
+--
+
+CREATE TABLE `slots` (
+  `id` int(11) NOT NULL,
+  `date` date NOT NULL,
+  `start_time` time NOT NULL,
+  `end_time` time NOT NULL,
+  `max_bookings` int(11) DEFAULT 10,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` datetime DEFAULT current_timestamp(),
+  `updated_at` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `slots`
+--
+
+INSERT INTO `slots` (`id`, `date`, `start_time`, `end_time`, `max_bookings`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, '2026-05-27', '10:49:00', '00:50:00', 10, 1, '2026-05-27 05:20:10', '2026-05-27 06:22:56');
 
 -- --------------------------------------------------------
 
@@ -402,7 +469,7 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `name`, `email`, `mobile`, `profile_image`, `fcm_token`, `password`, `reset_token`, `reset_token_expires`, `role`, `is_active`, `is_blocked`, `created_at`, `updated_at`) VALUES
 (1, 'Super Admin', 'admin@mistry.com', '9999999999', NULL, NULL, '$2b$10$33MJSUpyt1JPOcF2NYmGreLp9a1SgJuaOimOI2zb53eEu2l9BOAyW', NULL, NULL, 'admin', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(2, 'Rahul Sharma', 'rahul@gmail.com', '9876543210', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
+(2, 'bhanta', 'bhatinda@gmail.com', '9876543210', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-12 07:08:47', '2026-05-23 07:44:32'),
 (3, 'Priya Singh', 'priya@gmail.com', '9876543211', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
 (4, 'Amit Kumar', 'amit@gmail.com', '9876543212', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
 (5, 'Sneha Patel', 'sneha@gmail.com', '9876543213', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
@@ -414,7 +481,16 @@ INSERT INTO `users` (`id`, `name`, `email`, `mobile`, `profile_image`, `fcm_toke
 (11, 'Mohan Painter', 'mohan@gmail.com', '9876543224', NULL, NULL, NULL, NULL, NULL, 'vendor', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
 (12, 'Sanjay AC Tech', 'sanjay@gmail.com', '9876543225', NULL, NULL, NULL, NULL, NULL, 'vendor', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
 (13, 'Ravi Beauty Expert', 'ravi@gmail.com', '9876543226', NULL, NULL, NULL, NULL, NULL, 'vendor', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
-(14, 'Kiran Car Wash', 'kiran@gmail.com', '9876543227', NULL, NULL, NULL, NULL, NULL, 'vendor', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47');
+(14, 'Kiran Car Wash', 'kiran@gmail.com', '9876543227', NULL, NULL, NULL, NULL, NULL, 'vendor', 1, 0, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
+(15, NULL, NULL, '8840958855', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-20 05:59:36', '2026-05-20 05:59:36'),
+(16, NULL, NULL, '8555588665', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-20 06:11:11', '2026-05-20 06:11:11'),
+(17, NULL, NULL, '8840958019', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-20 06:14:39', '2026-05-20 06:14:39'),
+(18, 'Rahul', '', '8885585588', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-20 06:15:55', '2026-05-20 12:37:38'),
+(19, NULL, NULL, '8375895787', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-20 07:37:18', '2026-05-20 07:37:18'),
+(20, 'Vivek', 'vivek@gmail.com', '8090145106', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-23 07:06:19', '2026-05-25 09:39:19'),
+(21, NULL, NULL, '7081472797', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-25 04:24:14', '2026-05-25 04:24:14'),
+(22, NULL, NULL, '8840980168', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-26 17:49:08', '2026-05-26 17:49:08'),
+(23, NULL, NULL, '3758493023', NULL, NULL, NULL, NULL, NULL, 'user', 1, 0, '2026-05-26 18:10:17', '2026-05-26 18:10:17');
 
 -- --------------------------------------------------------
 
@@ -451,7 +527,7 @@ CREATE TABLE `vendors` (
 --
 
 INSERT INTO `vendors` (`id`, `user_id`, `business_name`, `description`, `logo`, `banner`, `address`, `latitude`, `longitude`, `working_hours`, `is_approved`, `is_suspended`, `is_featured`, `kyc_status`, `kyc_rejection_reason`, `avg_rating`, `total_reviews`, `revenue_model`, `commission_percent`, `created_at`, `updated_at`) VALUES
-(1, 7, 'Kumar Plumbing Services', 'Expert plumbing solutions for homes and offices. 24/7 emergency service available.', NULL, NULL, 'Lajpat Nagar, New Delhi', 28.56720000, 77.24310000, NULL, 1, 0, 0, 'approved', NULL, 4.50, 25, NULL, NULL, '2026-05-12 07:08:47', '2026-05-12 11:52:25'),
+(1, 7, 'Kumar Plumbing Services', 'Expert plumbing solutions for homes and offices. 24/7 emergency service available.', NULL, NULL, 'Lajpat Nagar, New Delhi', 28.56720000, 77.24310000, NULL, 1, 0, 0, 'approved', NULL, 4.50, 25, NULL, NULL, '2026-05-12 07:08:47', '2026-05-19 09:37:26'),
 (2, 8, 'Suresh Electrical Works', 'Licensed electrician with 10+ years experience. All electrical repairs and installations.', NULL, NULL, 'Karol Bagh, New Delhi', 28.65190000, 77.19090000, NULL, 1, 0, 0, 'approved', NULL, 4.30, 18, NULL, NULL, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
 (3, 9, 'Deepak Cleaning Services', 'Professional home and office cleaning. Deep cleaning specialists.', NULL, NULL, 'Dwarka, New Delhi', 28.59210000, 77.04600000, NULL, 1, 0, 0, 'approved', NULL, 4.70, 32, NULL, NULL, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
 (4, 10, 'Rajesh Carpentry', 'Custom furniture and carpentry work. Quality wood work guaranteed.', NULL, NULL, 'Rohini, New Delhi', 28.70410000, 77.10250000, NULL, 1, 0, 0, 'approved', NULL, 4.20, 15, NULL, NULL, '2026-05-12 07:08:47', '2026-05-12 07:08:47'),
@@ -553,14 +629,42 @@ CREATE TABLE `vendor_subscriptions` (
 --
 
 INSERT INTO `vendor_subscriptions` (`id`, `vendor_id`, `plan_id`, `billing_cycle`, `starts_at`, `expires_at`, `payment_id`, `status`, `created_at`, `updated_at`) VALUES
-(1, 1, 2, 'monthly', '2024-01-01 00:00:00', '2024-02-01 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-12 07:56:37'),
-(2, 2, 1, 'monthly', '2024-01-01 00:00:00', '2024-02-01 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-12 07:56:37'),
-(3, 3, 3, 'yearly', '2024-01-01 00:00:00', '2025-01-01 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-12 07:56:37'),
-(4, 4, 1, 'monthly', '2024-01-01 00:00:00', '2024-02-01 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-12 07:56:37'),
-(5, 5, 2, 'monthly', '2024-01-01 00:00:00', '2024-02-01 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-12 07:56:37'),
-(6, 6, 2, 'monthly', '2024-01-01 00:00:00', '2024-02-01 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-12 07:56:37'),
-(7, 7, 3, 'yearly', '2024-01-01 00:00:00', '2025-01-01 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-12 07:56:37'),
-(8, 8, 1, 'monthly', '2024-01-01 00:00:00', '2024-02-01 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-12 07:56:37');
+(1, 1, 2, 'monthly', '2026-05-14 00:00:00', '2026-06-14 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-14 05:12:44'),
+(2, 2, 1, 'monthly', '2026-05-14 00:00:00', '2026-06-14 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-14 05:12:44'),
+(3, 3, 3, 'yearly', '2026-05-14 00:00:00', '2027-05-14 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-14 05:12:44'),
+(4, 4, 1, 'monthly', '2026-04-19 00:00:00', '2026-05-19 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-14 05:12:44'),
+(5, 5, 2, 'monthly', '2026-04-17 00:00:00', '2026-05-17 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-14 05:12:44'),
+(6, 6, 2, 'monthly', '2026-04-29 00:00:00', '2026-05-29 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-14 05:12:44'),
+(7, 7, 3, 'yearly', '2026-05-14 00:00:00', '2027-05-14 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-14 05:12:44'),
+(8, 8, 1, 'monthly', '2026-05-14 00:00:00', '2026-06-14 00:00:00', NULL, 'active', '2026-05-12 07:56:37', '2026-05-14 05:12:44');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `workers`
+--
+
+CREATE TABLE `workers` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `phone` varchar(15) NOT NULL,
+  `aadhaar_number` varchar(12) DEFAULT NULL,
+  `aadhaar_front` varchar(255) DEFAULT NULL,
+  `aadhaar_back` varchar(255) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `is_blocked` tinyint(1) DEFAULT 0,
+  `fcm_token` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `workers`
+--
+
+INSERT INTO `workers` (`id`, `name`, `email`, `phone`, `aadhaar_number`, `aadhaar_front`, `aadhaar_back`, `is_active`, `is_blocked`, `fcm_token`, `created_at`, `updated_at`) VALUES
+(1, 'Anurag Pandey', 'anurag@gmail.com', '1234567890', '123456789012', '1779436619055-ChatGPT_Image_May_20,_2026,_03_45_04_PM.webp', '1779436619055-ChatGPT_Image_May_20,_2026,_03_45_04_PM.webp', 1, 0, NULL, '2026-05-22 07:56:59', '2026-05-22 07:56:59');
 
 -- --------------------------------------------------------
 
@@ -587,11 +691,20 @@ INSERT INTO `zones` (`id`, `name`, `color`, `is_active`, `created_at`, `updated_
 (2, 'South Delhi Zone', '#10b981', 1, '2026-05-08 12:05:08', '2026-05-08 12:05:08', ''),
 (3, 'Noida Zone', '#f59e0b', 1, '2026-05-08 12:05:08', '2026-05-08 12:05:08', ''),
 (4, 'Gurgaon Zone', '#ef4444', 1, '2026-05-08 12:05:08', '2026-05-08 12:05:08', ''),
-(6, 'india', '#6c47ff', 1, '2026-05-12 07:12:07', '2026-05-12 07:12:07', '[{\"lat\":36.26288131717469,\"lng\":72.73498953247072},{\"lat\":22.086661671007363,\"lng\":69.08752859497072},{\"lat\":7.820939855518303,\"lng\":78.14026296997072},{\"lat\":26.21558028881294,\"lng\":95.01526296997072}]');
+(6, 'india', '#6c47ff', 1, '2026-05-12 07:12:07', '2026-05-12 07:12:07', '[{\"lat\":36.26288131717469,\"lng\":72.73498953247072},{\"lat\":22.086661671007363,\"lng\":69.08752859497072},{\"lat\":7.820939855518303,\"lng\":78.14026296997072},{\"lat\":26.21558028881294,\"lng\":95.01526296997072}]'),
+(7, 'Delhi', '#6c47ff', 1, '2026-05-15 05:15:32', '2026-05-15 05:15:32', '[{\"lat\":29.182974206860067,\"lng\":76.55394018554689},{\"lat\":29.221334233068703,\"lng\":78.56993139648439},{\"lat\":27.918824110715363,\"lng\":78.56443823242189},{\"lat\":27.86541886072603,\"lng\":76.53196752929689}]'),
+(8, 'india', '#6c47ff', 1, '2026-05-22 09:51:55', '2026-05-22 09:51:55', '[{\"lat\":34.600371210725335,\"lng\":72.46256292724611},{\"lat\":34.744936387328536,\"lng\":91.79850042724611},{\"lat\":10.318898954235513,\"lng\":92.85318792724611},{\"lat\":9.972834579977581,\"lng\":67.71646917724611}]');
 
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `addresses`
+--
+ALTER TABLE `addresses`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`);
 
 --
 -- Indexes for table `bookings`
@@ -599,9 +712,11 @@ INSERT INTO `zones` (`id`, `name`, `color`, `is_active`, `created_at`, `updated_
 ALTER TABLE `bookings`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user_id` (`user_id`),
-  ADD KEY `vendor_id` (`vendor_id`),
   ADD KEY `service_id` (`service_id`),
-  ADD KEY `idx_zone_id` (`zone_id`);
+  ADD KEY `idx_zone_id` (`zone_id`),
+  ADD KEY `fk_booking_worker` (`worker_id`),
+  ADD KEY `fk_bookings_address` (`address_id`),
+  ADD KEY `fk_bookings_slot` (`slot_id`);
 
 --
 -- Indexes for table `categories`
@@ -662,7 +777,6 @@ ALTER TABLE `reviews`
 --
 ALTER TABLE `services`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `vendor_id` (`vendor_id`),
   ADD KEY `category_id` (`category_id`);
 
 --
@@ -671,6 +785,14 @@ ALTER TABLE `services`
 ALTER TABLE `sliders`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_type_active` (`type`,`is_active`);
+
+--
+-- Indexes for table `slots`
+--
+ALTER TABLE `slots`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_slots_date` (`date`),
+  ADD KEY `idx_slots_active_date` (`is_active`,`date`);
 
 --
 -- Indexes for table `subscription_plans`
@@ -716,6 +838,14 @@ ALTER TABLE `vendor_subscriptions`
   ADD KEY `plan_id` (`plan_id`);
 
 --
+-- Indexes for table `workers`
+--
+ALTER TABLE `workers`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `phone` (`phone`),
+  ADD KEY `idx_phone` (`phone`);
+
+--
 -- Indexes for table `zones`
 --
 ALTER TABLE `zones`
@@ -728,16 +858,22 @@ ALTER TABLE `zones`
 --
 
 --
+-- AUTO_INCREMENT for table `addresses`
+--
+ALTER TABLE `addresses`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+
+--
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=39;
 
 --
 -- AUTO_INCREMENT for table `messages`
@@ -749,13 +885,13 @@ ALTER TABLE `messages`
 -- AUTO_INCREMENT for table `notifications`
 --
 ALTER TABLE `notifications`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- AUTO_INCREMENT for table `otps`
 --
 ALTER TABLE `otps`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=56;
 
 --
 -- AUTO_INCREMENT for table `platform_settings`
@@ -779,12 +915,18 @@ ALTER TABLE `reviews`
 -- AUTO_INCREMENT for table `services`
 --
 ALTER TABLE `services`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
 -- AUTO_INCREMENT for table `sliders`
 --
 ALTER TABLE `sliders`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `slots`
+--
+ALTER TABLE `slots`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
@@ -797,7 +939,7 @@ ALTER TABLE `subscription_plans`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `vendors`
@@ -824,23 +966,37 @@ ALTER TABLE `vendor_subscriptions`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
+-- AUTO_INCREMENT for table `workers`
+--
+ALTER TABLE `workers`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
 -- AUTO_INCREMENT for table `zones`
 --
 ALTER TABLE `zones`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- Constraints for dumped tables
 --
 
 --
+-- Constraints for table `addresses`
+--
+ALTER TABLE `addresses`
+  ADD CONSTRAINT `addresses_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Constraints for table `bookings`
 --
 ALTER TABLE `bookings`
   ADD CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `bookings_ibfk_3` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_booking_zone` FOREIGN KEY (`zone_id`) REFERENCES `zones` (`id`) ON DELETE SET NULL;
+  ADD CONSTRAINT `fk_booking_worker` FOREIGN KEY (`worker_id`) REFERENCES `workers` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_booking_zone` FOREIGN KEY (`zone_id`) REFERENCES `zones` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_bookings_address` FOREIGN KEY (`address_id`) REFERENCES `addresses` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_bookings_slot` FOREIGN KEY (`slot_id`) REFERENCES `slots` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `categories`
@@ -869,13 +1025,6 @@ ALTER TABLE `reviews`
   ADD CONSTRAINT `reviews_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `reviews_ibfk_2` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `reviews_ibfk_3` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `services`
---
-ALTER TABLE `services`
-  ADD CONSTRAINT `services_ibfk_1` FOREIGN KEY (`vendor_id`) REFERENCES `vendors` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `services_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`);
 
 --
 -- Constraints for table `vendors`
