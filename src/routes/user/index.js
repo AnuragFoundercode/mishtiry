@@ -20,9 +20,14 @@ router.put('/profile', ...auth, upload.single('profile_image'), userCtrl.updateP
 // Categories & Services
 router.get('/categories', ...auth, userCtrl.getCategories);
 router.get('/categories/:id/services', ...auth, userCtrl.getServicesByCategory);
+router.get('/services/popular', ...auth, userCtrl.getPopularServices);
+router.get('/services/:id', ...auth, userCtrl.getServiceDetail);
 
 // Sliders
 router.get('/sliders', ...auth, sliderCtrl.getSliders);
+
+// Slots
+router.get('/slots', ...auth, userCtrl.getAvailableSlots);
 
 // Addresses
 router.get('/addresses', ...auth, addressCtrl.getAddresses);

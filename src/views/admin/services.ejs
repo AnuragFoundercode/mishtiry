@@ -41,7 +41,7 @@
   <div class="table-responsive">
     <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
-        <tr><th>#</th><th>Service</th><th>Category</th><th>Price</th><th>Status</th><th>Actions</th></tr>
+        <tr><th>#</th><th>Service</th><th>Category</th><th>Price</th><th>Discount</th><th>Final Price</th><th>Rating</th><th>Status</th><th>Actions</th></tr>
       </thead>
       <tbody>
       <% services.forEach((s, i) => { %>
@@ -55,6 +55,21 @@
           </td>
           <td><span class="badge bg-light text-dark border"><%= s.Category?.name || '—' %></span></td>
           <td class="fw-bold text-dark">₹<%= parseFloat(s.price).toFixed(0) %></td>
+          <td>
+            <% if(parseFloat(s.discount_percent) > 0){ %>
+              <span class="badge bg-danger"><%= s.discount_percent %>%</span>
+            <% } else { %>
+              <span class="text-muted">—</span>
+            <% } %>
+          </td>
+          <td class="fw-bold text-success">₹<%= s.final_price ? parseFloat(s.final_price).toFixed(0) : parseFloat(s.price).toFixed(0) %></td>
+          <td>
+            <% if(parseFloat(s.rating) > 0){ %>
+              <span class="text-warning"><i class="bi bi-star-fill"></i></span> <%= s.rating %> <small class="text-muted">(<%= s.rating_count %>)</small>
+            <% } else { %>
+              <span class="text-muted small">No ratings</span>
+            <% } %>
+          </td>
           <td>
             <span class="badge <%= s.is_active ? 'bg-success' : 'bg-secondary' %> rounded-pill">
               <%= s.is_active ? 'Active' : 'Inactive' %>
@@ -109,9 +124,33 @@
                       <input type="number" name="price" class="form-control" value="<%= s.price %>" step="0.01" required/>
                     </div>
                     <div class="col-6">
-                      <label class="form-label">Est. Time</label>
-                      <input type="text" name="estimated_time" class="form-control" value="<%= s.estimated_time || '' %>" placeholder="e.g. 2 hours"/>
+                      <label class="form-label">Discount (%)</label>
+                      <input type="number" name="discount_percent" class="form-control" value="<%= s.discount_percent || 0 %>" step="0.01" min="0" max="100"/>
                     </div>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Est. Time</label>
+                    <input type="text" name="estimated_time" class="form-control" value="<%= s.estimated_time || '' %>" placeholder="e.g. 2 hours"/>
+                  </div>
+                  <% const faqArr = Array.isArray(s.faqs) ? s.faqs : (typeof s.faqs === 'string' ? JSON.parse(s.faqs || '[]') : []); %>
+                  <div class="mb-3">
+                    <label class="form-label">FAQs <small class="text-muted">(one per line: question | answer)</small></label>
+                    <textarea name="faqs" class="form-control" rows="3" placeholder="How long does it take? | Usually 1-2 hours"><%= faqArr.map(f => f.question + ' | ' + f.answer).join('\n') %></textarea>
+                  </div>
+                  <% const incArr = Array.isArray(s.includes) ? s.includes : (typeof s.includes === 'string' ? JSON.parse(s.includes || '[]') : []); %>
+                  <div class="mb-3">
+                    <label class="form-label">Includes <small class="text-muted">(one item per line)</small></label>
+                    <textarea name="includes" class="form-control" rows="3" placeholder="Deep cleaning of all rooms"><%= incArr.join('\n') %></textarea>
+                  </div>
+                  <% const howArr = Array.isArray(s.how_its_done) ? s.how_its_done : (typeof s.how_its_done === 'string' ? JSON.parse(s.how_its_done || '[]') : []); %>
+                  <div class="mb-3">
+                    <label class="form-label">How it's done? <small class="text-muted">(one step per line)</small></label>
+                    <textarea name="how_its_done" class="form-control" rows="3" placeholder="Step 1: Inspection of area"><%= howArr.join('\n') %></textarea>
+                  </div>
+                  <% const excArr = Array.isArray(s.does_not_include) ? s.does_not_include : (typeof s.does_not_include === 'string' ? JSON.parse(s.does_not_include || '[]') : []); %>
+                  <div class="mb-3">
+                    <label class="form-label">Does not include <small class="text-muted">(one item per line)</small></label>
+                    <textarea name="does_not_include" class="form-control" rows="3" placeholder="Ceiling cleaning"><%= excArr.join('\n') %></textarea>
                   </div>
                   <div class="mb-3">
                     <label class="form-label">Images <small class="text-muted">(leave empty to keep current)</small></label>
@@ -144,7 +183,7 @@
       <% }) %>
       <% if(!services.length){ %>
         <tr>
-          <td colspan="6" class="text-center py-5 text-muted">
+          <td colspan="9" class="text-center py-5 text-muted">
             <i class="bi bi-tools" style="font-size:2rem;"></i>
             <p class="mt-2 mb-0">No services found</p>
           </td>
@@ -201,13 +240,33 @@
               <input type="number" name="price" class="form-control" placeholder="0.00" step="0.01" required/>
             </div>
             <div class="col-6">
-              <label class="form-label">Est. Time</label>
-              <input type="text" name="estimated_time" class="form-control" placeholder="e.g. 2 hours"/>
+              <label class="form-label">Discount (%)</label>
+              <input type="number" name="discount_percent" class="form-control" placeholder="0" step="0.01" min="0" max="100"/>
             </div>
           </div>
-          <div class="mb-2">
+          <div class="mb-3">
+            <label class="form-label">Est. Time</label>
+            <input type="text" name="estimated_time" class="form-control" placeholder="e.g. 2 hours"/>
+          </div>
+          <div class="mb-3">
             <label class="form-label">Images <small class="text-muted">(optional, max 10)</small></label>
             <input type="file" name="images" class="form-control" accept="image/*" multiple/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Includes <small class="text-muted">(one item per line)</small></label>
+            <textarea name="includes" class="form-control" rows="3" placeholder="Deep cleaning of all rooms&#10;Bathroom sanitization&#10;Kitchen cleaning"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">How it's done? <small class="text-muted">(one step per line)</small></label>
+            <textarea name="how_its_done" class="form-control" rows="3" placeholder="Step 1: Inspection of area&#10;Step 2: Cleaning with equipment&#10;Step 3: Final check"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Does not include <small class="text-muted">(one item per line)</small></label>
+            <textarea name="does_not_include" class="form-control" rows="3" placeholder="Ceiling cleaning&#10;Outdoor areas&#10;Heavy furniture moving"></textarea>
+          </div>
+          <div class="mb-2">
+            <label class="form-label">FAQs <small class="text-muted">(one per line: question | answer)</small></label>
+            <textarea name="faqs" class="form-control" rows="3" placeholder="How long does it take? | Usually 1-2 hours&#10;Do I need tools? | No, we bring everything"></textarea>
           </div>
         </div>
         <div class="modal-footer">

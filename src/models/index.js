@@ -10,6 +10,7 @@ const Zone = require('./zone.model');
 const Slider = require('./slider.model');
 const Worker = require('./worker.model');
 const Address = require('./address.model');
+const Slot = require('./slot.model');
 
 // Category self-join
 Category.hasMany(Category, { as: 'subcategories', foreignKey: 'parent_id' });
@@ -46,7 +47,11 @@ Address.belongsTo(User, { foreignKey: 'user_id' });
 Booking.belongsTo(Address, { foreignKey: 'address_id' });
 Address.hasMany(Booking, { foreignKey: 'address_id' });
 
+// Slot
+Slot.hasMany(Booking, { foreignKey: 'slot_id' });
+Booking.belongsTo(Slot, { foreignKey: 'slot_id' });
+
 module.exports = {
   User, Service, Category, Booking, Review,
-  Notification, Message, Policy, Zone, Slider, Worker, Address,
+  Notification, Message, Policy, Zone, Slider, Worker, Address, Slot,
 };

@@ -4,6 +4,7 @@ const Zone = require('../../models/zone.model');
 const Worker = require('../../models/worker.model');
 const User = require('../../models/user.model');
 const Address = require('../../models/address.model');
+const Slot = require('../../models/slot.model');
 const Notification = require('../../models/notification.model');
 const { success, error } = require('../../helpers/response.helper');
 const { emitToUser } = require('../../sockets/socket.handler');
@@ -18,10 +19,38 @@ const setIo = (io) => { _io = io; };
 const previewCharges = async (req, res) => {
   try {
     const { service_id } = req.query;
-    const service = await Service.findByPk(service_id);
+    if (!service_id) return error(res, 'service_id is required', 400);
+
+    const service = await Service.findByPk(service_id, {
+      attributes: ['id', 'name', 'description', 'price', 'discount_percent', 'final_price', 'estimated_time', 'images', 'rating', 'rating_count'],
+      include: [{ model: require('../../models/category.model'), attributes: ['id', 'name'] }],
+    });
     if (!service) return error(res, 'Service not found', 404);
-    const charges = await calculateBookingCharges(service.price);
-    return success(res, { charges });
+
+    // Use final_price (after discount) if available, otherwise base price
+    const effectivePrice = parseFloat(service.final_price || service.price);
+    const charges = await calculateBookingCharges(effectivePrice);
+
+    return success(res, {
+      service: {
+        id: service.id,
+        name: service.name,
+        description: service.description,
+        image: service.images && service.images.length ? service.images[0] : null,
+        estimated_time: service.estimated_time,
+        rating: service.rating,
+        rating_count: service.rating_count,
+        category: service.Category ? { id: service.Category.id, name: service.Category.name } : null,
+      },
+      pricing: {
+        base_price: parseFloat(service.price),
+        discount_percent: parseFloat(service.discount_percent || 0),
+        discounted_price: effectivePrice,
+        platform_charge: charges.platform_charge,
+        gst_amount: charges.gst_amount,
+        total_amount: charges.total_amount,
+      },
+    });
   } catch (err) { return error(res, err.message); }
 };
 
@@ -30,10 +59,21 @@ const previewCharges = async (req, res) => {
 // Online → booking created, Cashfree order created, payment_session_id returned
 const createBooking = async (req, res) => {
   try {
-    const { service_id, booking_date, notes, address_id, payment_method } = req.body;
+    const { service_id, booking_date, notes, address_id, payment_method, slot_id } = req.body;
 
     if (!service_id || !booking_date) return error(res, 'service_id and booking_date are required', 400);
     if (!address_id) return error(res, 'address_id is required', 400);
+
+    // Validate slot if provided
+    let slot = null;
+    if (slot_id) {
+      slot = await Slot.findByPk(slot_id);
+      if (!slot) return error(res, 'Slot not found', 404);
+      if (!slot.is_active) return error(res, 'This slot is not available', 400);
+      // Check capacity
+      const currentCount = await Booking.count({ where: { slot_id } });
+      if (currentCount >= slot.max_bookings) return error(res, 'This slot is fully booked', 400);
+    }
 
     // Fetch the saved address
     const address = await Address.findOne({ where: { id: address_id, user_id: req.user.id } });
@@ -63,6 +103,7 @@ const createBooking = async (req, res) => {
       address_id: address.id,
       address: address.full_address,
       zone_id: matchedZone ? matchedZone.id : null,
+      slot_id: slot_id || null,
       amount: charges.service_price,
       platform_charge: charges.platform_charge,
       gst_amount: charges.gst_amount,
@@ -167,6 +208,7 @@ const getMyBookings = async (req, res) => {
         { model: Service, include: [{ model: require('../../models/category.model'), attributes: ['id', 'name'] }] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
         { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'latitude', 'longitude', 'city', 'pincode'], required: false },
+        { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
       ],
       order: [['created_at', 'DESC']],
     });
@@ -183,6 +225,7 @@ const getBookingDetail = async (req, res) => {
         { model: Service, include: [{ model: require('../../models/category.model'), attributes: ['id', 'name'] }] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
         { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'latitude', 'longitude', 'city', 'pincode'], required: false },
+        { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
       ],
     });
     if (!booking) return error(res, 'Booking not found', 404);

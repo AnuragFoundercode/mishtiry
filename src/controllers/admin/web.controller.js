@@ -2,13 +2,28 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const {
   User, Booking, Category, Service, Notification,
-  Policy, Zone, Worker,
+  Policy, Zone, Worker, Slot,
 } = require('../../models/index');
 const PlatformSetting = require('../../models/platform_setting.model');
 const { sendEmailNotification } = require('../../helpers/notification.helper');
 const { getSettings } = require('../../helpers/pricing.helper');
 const { Op } = require('sequelize');
 const sequelize = require('../../config/database');
+
+// Helper to parse textarea lines or JSON for service fields
+function parseLinesOrJson(value, type) {
+  if (!value || !value.trim()) return null;
+  try { return JSON.parse(value); } catch (e) { /* not JSON, parse lines */ }
+  const lines = value.split('\n').filter(l => l.trim());
+  if (type === 'faq') {
+    return lines.map(line => {
+      const [question, ...rest] = line.split('|');
+      return { question: (question || '').trim(), answer: (rest.join('|') || '').trim() };
+    }).filter(f => f.question);
+  }
+  // type === 'list' — simple array of strings
+  return lines.map(l => l.trim());
+}
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -276,10 +291,16 @@ const toggleService = async (req, res) => {
 
 const createService = async (req, res) => {
   try {
-    const { category_id, name, description, price, estimated_time } = req.body;
+    const { category_id, name, description, price, estimated_time, discount_percent, faqs, includes, how_its_done, does_not_include } = req.body;
     if (!category_id || !name || !price) { req.flash('error', 'Category, name and price are required'); return res.redirect('/admin/services'); }
     const images = req.files?.map(f => f.filename) || [];
-    await Service.create({ category_id, name, description: description || null, price, estimated_time: estimated_time || null, images });
+    const discount = parseFloat(discount_percent) || 0;
+    const final_price = discount > 0 ? (price - (price * discount / 100)).toFixed(2) : price;
+    const parsedFaqs = parseLinesOrJson(faqs, 'faq');
+    const parsedIncludes = parseLinesOrJson(includes, 'list');
+    const parsedHowItsDone = parseLinesOrJson(how_its_done, 'list');
+    const parsedDoesNotInclude = parseLinesOrJson(does_not_include, 'list');
+    await Service.create({ category_id, name, description: description || null, price, estimated_time: estimated_time || null, images, faqs: parsedFaqs, includes: parsedIncludes, how_its_done: parsedHowItsDone, does_not_include: parsedDoesNotInclude, discount_percent: discount, final_price });
     req.flash('success', `Service "${name}" created`);
     res.redirect('/admin/services');
   } catch (e) { req.flash('error', e.message); res.redirect('/admin/services'); }
@@ -289,8 +310,15 @@ const updateService = async (req, res) => {
   try {
     const svc = await Service.findByPk(req.params.id);
     if (!svc) { req.flash('error', 'Service not found'); return res.redirect('/admin/services'); }
-    const { category_id, name, description, price, estimated_time, is_active } = req.body;
+    const { category_id, name, description, price, estimated_time, is_active, discount_percent, faqs, includes, how_its_done, does_not_include } = req.body;
     const newImages = req.files?.map(f => f.filename);
+    const updatedPrice = price || svc.price;
+    const discount = discount_percent !== undefined ? parseFloat(discount_percent) || 0 : parseFloat(svc.discount_percent) || 0;
+    const final_price = discount > 0 ? (updatedPrice - (updatedPrice * discount / 100)).toFixed(2) : updatedPrice;
+    const parsedFaqs = faqs !== undefined ? parseLinesOrJson(faqs, 'faq') : undefined;
+    const parsedIncludes = includes !== undefined ? parseLinesOrJson(includes, 'list') : undefined;
+    const parsedHowItsDone = how_its_done !== undefined ? parseLinesOrJson(how_its_done, 'list') : undefined;
+    const parsedDoesNotInclude = does_not_include !== undefined ? parseLinesOrJson(does_not_include, 'list') : undefined;
     await svc.update({
       ...(category_id && { category_id }),
       ...(name && { name }),
@@ -299,6 +327,12 @@ const updateService = async (req, res) => {
       ...(estimated_time !== undefined && { estimated_time }),
       ...(is_active !== undefined && { is_active: is_active === '1' }),
       ...(newImages?.length && { images: newImages }),
+      ...(parsedFaqs !== undefined && { faqs: parsedFaqs }),
+      ...(parsedIncludes !== undefined && { includes: parsedIncludes }),
+      ...(parsedHowItsDone !== undefined && { how_its_done: parsedHowItsDone }),
+      ...(parsedDoesNotInclude !== undefined && { does_not_include: parsedDoesNotInclude }),
+      discount_percent: discount,
+      final_price,
     });
     req.flash('success', 'Service updated');
     res.redirect('/admin/services');
@@ -315,6 +349,7 @@ const bookingDetail = async (req, res) => {
         { model: User, attributes: ['name', 'mobile', 'email'] },
         { model: Service, attributes: ['name', 'description', 'estimated_time'] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
+        { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
       ],
     });
     if (!booking) { req.flash('error', 'Booking not found'); return res.redirect('/admin/bookings'); }
@@ -363,6 +398,7 @@ const bookings = async (req, res) => {
       include: [
         { model: User, attributes: ['name', 'mobile'], ...(userWhere && { where: userWhere, required: true }) },
         { model: Service, attributes: ['name'] },
+        { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
       ],
     });
     res.render('admin/bookings', { title: 'Bookings', page: 'bookings', bookings: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), status, search, adminName: req.session.adminName, success: req.flash('success') });
@@ -630,6 +666,64 @@ const assignWorker = async (req, res) => {
   } catch (e) { req.flash('error', e.message); res.redirect(`/admin/bookings/${req.params.id}`); }
 };
 
+// ─── Slots ────────────────────────────────────────────────────────────────────
+
+const slots = async (req, res) => {
+  try {
+    const { date } = req.query;
+    const where = {};
+    if (date) where.date = date;
+    const allSlots = await Slot.findAll({
+      where,
+      attributes: {
+        include: [
+          [sequelize.literal(`(SELECT COUNT(*) FROM bookings WHERE bookings.slot_id = Slot.id)`), 'current_bookings'],
+        ],
+      },
+      order: [['date', 'ASC'], ['start_time', 'ASC']],
+    });
+    res.render('admin/slots', {
+      title: 'Time Slots', page: 'slots', slots: allSlots.map(s => s.toJSON()), filterDate: date || '',
+      adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
+
+const createSlotWeb = async (req, res) => {
+  try {
+    const { date, start_time, end_time, max_bookings, is_active } = req.body;
+    if (!date || !start_time || !end_time) { req.flash('error', 'Date, start time and end time are required'); return res.redirect('/admin/slots'); }
+    await Slot.create({ date, start_time, end_time, max_bookings: max_bookings || 10, is_active: is_active === '1' });
+    req.flash('success', 'Slot created successfully');
+    res.redirect('/admin/slots');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/slots'); }
+};
+
+const updateSlotWeb = async (req, res) => {
+  try {
+    const slot = await Slot.findByPk(req.params.id);
+    if (!slot) { req.flash('error', 'Slot not found'); return res.redirect('/admin/slots'); }
+    const { date, start_time, end_time, max_bookings, is_active } = req.body;
+    await slot.update({
+      ...(date && { date }),
+      ...(start_time && { start_time }),
+      ...(end_time && { end_time }),
+      ...(max_bookings && { max_bookings }),
+      is_active: is_active === '1',
+    });
+    req.flash('success', 'Slot updated');
+    res.redirect('/admin/slots');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/slots'); }
+};
+
+const deleteSlotWeb = async (req, res) => {
+  try {
+    await Slot.destroy({ where: { id: req.params.id } });
+    req.flash('success', 'Slot deleted');
+    res.redirect('/admin/slots');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/slots'); }
+};
+
 module.exports = {
   showLogin, doLogin, doLogout,
   showForgotPassword, doForgotPassword, showResetPassword, doResetPassword,
@@ -645,4 +739,5 @@ module.exports = {
   policies, createPolicy, updatePolicy, deletePolicy,
   zones, createZone, updateZone, deleteZone,
   workers, createWorker, workerDetail, toggleBlockWorker, assignWorker,
+  slots, createSlotWeb, updateSlotWeb, deleteSlotWeb,
 };

@@ -1,6 +1,9 @@
 const User = require('../../models/user.model');
 const Category = require('../../models/category.model');
 const Service = require('../../models/service.model');
+const Booking = require('../../models/booking.model');
+const Slot = require('../../models/slot.model');
+const sequelize = require('../../config/database');
 const { success, error } = require('../../helpers/response.helper');
 
 // GET /api/user/profile
@@ -58,7 +61,7 @@ const getServicesByCategory = async (req, res) => {
 
     const { count, rows } = await Service.findAndCountAll({
       where: { category_id: id, is_active: true },
-      attributes: ['id', 'name', 'description', 'price', 'estimated_time', 'images'],
+      attributes: ['id', 'name', 'description', 'price', 'discount_percent', 'final_price', 'rating', 'rating_count', 'faqs', 'includes', 'how_its_done', 'does_not_include', 'estimated_time', 'images'],
       limit: parseInt(limit), offset: parseInt(offset),
       order: [['name', 'ASC']],
     });
@@ -71,4 +74,70 @@ const getServicesByCategory = async (req, res) => {
   } catch (e) { return error(res, e.message); }
 };
 
-module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory };
+// GET /api/user/services/:id
+const getServiceDetail = async (req, res) => {
+  try {
+    const service = await Service.findOne({
+      where: { id: req.params.id, is_active: true },
+      attributes: ['id', 'name', 'description', 'price', 'discount_percent', 'final_price', 'rating', 'rating_count', 'faqs', 'includes', 'how_its_done', 'does_not_include', 'estimated_time', 'images'],
+      include: [{ model: Category, attributes: ['id', 'name'] }],
+    });
+    if (!service) return error(res, 'Service not found', 404);
+    return success(res, { service });
+  } catch (e) { return error(res, e.message); }
+};
+
+// GET /api/user/services/popular
+const getPopularServices = async (req, res) => {
+  try {
+    const services = await Service.findAll({
+      where: { is_active: true },
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(SELECT COUNT(*) FROM bookings WHERE bookings.service_id = Service.id)`),
+            'booking_count',
+          ],
+        ],
+      },
+      include: [{ model: Category, attributes: ['id', 'name'] }],
+      order: [
+        [sequelize.literal('booking_count'), 'DESC'],
+        ['rating', 'DESC'],
+      ],
+      limit: 10,
+    });
+
+    return success(res, services);
+  } catch (e) { return error(res, e.message); }
+};
+
+// GET /api/user/slots?date=2025-06-01
+const getAvailableSlots = async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) return error(res, 'date query param is required', 400);
+
+    const slots = await Slot.findAll({
+      where: { date, is_active: true },
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(SELECT COUNT(*) FROM bookings WHERE bookings.slot_id = Slot.id)`),
+            'current_bookings',
+          ],
+        ],
+      },
+      order: [['start_time', 'ASC']],
+    });
+
+    // Filter out fully booked slots
+    const available = slots
+      .map((s) => s.toJSON())
+      .filter((s) => s.current_bookings < s.max_bookings);
+
+    return success(res, available);
+  } catch (e) { return error(res, e.message); }
+};
+
+module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getAvailableSlots };

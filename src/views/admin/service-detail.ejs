@@ -84,6 +84,26 @@
             <td class="text-muted fw-medium">Price</td>
             <td class="fw-bold text-dark">₹<%= parseFloat(service.price).toFixed(2) %></td>
           </tr>
+          <% if(parseFloat(service.discount_percent) > 0){ %>
+          <tr>
+            <td class="text-muted fw-medium">Discount</td>
+            <td><span class="badge bg-danger"><%= service.discount_percent %>% OFF</span></td>
+          </tr>
+          <tr>
+            <td class="text-muted fw-medium">Final Price</td>
+            <td class="fw-bold text-success">₹<%= parseFloat(service.final_price).toFixed(2) %></td>
+          </tr>
+          <% } %>
+          <tr>
+            <td class="text-muted fw-medium">Rating</td>
+            <td>
+              <% if(parseFloat(service.rating) > 0){ %>
+                <span class="text-warning"><i class="bi bi-star-fill"></i></span> <%= service.rating %> <small class="text-muted">(<%= service.rating_count %> reviews)</small>
+              <% } else { %>
+                <span class="text-muted">No ratings yet</span>
+              <% } %>
+            </td>
+          </tr>
           <tr>
             <td class="text-muted fw-medium">Est. Time</td>
             <td><%= service.estimated_time || '—' %></td>
@@ -120,6 +140,83 @@
 
   <!-- Booking History -->
   <div class="col-lg-8">
+    <!-- FAQs Section -->
+    <% const detailFaqArr = Array.isArray(service.faqs) ? service.faqs : (typeof service.faqs === 'string' ? JSON.parse(service.faqs || '[]') : []); %>
+    <% if(detailFaqArr.length){ %>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark"><i class="bi bi-question-circle me-2 text-primary"></i>FAQs</h6>
+      </div>
+      <div class="card-body">
+        <div class="accordion accordion-flush" id="faqAccordion">
+          <% detailFaqArr.forEach((faq, idx) => { %>
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed fw-medium" type="button" data-bs-toggle="collapse" data-bs-target="#faq<%= idx %>">
+                <%= faq.question %>
+              </button>
+            </h2>
+            <div id="faq<%= idx %>" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body text-muted"><%= faq.answer %></div>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Includes Section -->
+    <% const detailIncArr = Array.isArray(service.includes) ? service.includes : (typeof service.includes === 'string' ? JSON.parse(service.includes || '[]') : []); %>
+    <% if(detailIncArr.length){ %>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark"><i class="bi bi-check-circle me-2 text-success"></i>Includes</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          <% detailIncArr.forEach(item => { %>
+          <li class="list-group-item px-0"><i class="bi bi-check2 text-success me-2"></i><%= item %></li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- How it's done Section -->
+    <% const detailHowArr = Array.isArray(service.how_its_done) ? service.how_its_done : (typeof service.how_its_done === 'string' ? JSON.parse(service.how_its_done || '[]') : []); %>
+    <% if(detailHowArr.length){ %>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark"><i class="bi bi-list-ol me-2 text-info"></i>How it's done?</h6>
+      </div>
+      <div class="card-body">
+        <ol class="list-group list-group-numbered list-group-flush">
+          <% detailHowArr.forEach(step => { %>
+          <li class="list-group-item px-0"><%= step %></li>
+          <% }) %>
+        </ol>
+      </div>
+    </div>
+    <% } %>
+
+    <!-- Does not include Section -->
+    <% const detailExcArr = Array.isArray(service.does_not_include) ? service.does_not_include : (typeof service.does_not_include === 'string' ? JSON.parse(service.does_not_include || '[]') : []); %>
+    <% if(detailExcArr.length){ %>
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white border-bottom">
+        <h6 class="mb-0 fw-semibold text-dark"><i class="bi bi-x-circle me-2 text-danger"></i>Does not include</h6>
+      </div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          <% detailExcArr.forEach(item => { %>
+          <li class="list-group-item px-0"><i class="bi bi-x text-danger me-2"></i><%= item %></li>
+          <% }) %>
+        </ul>
+      </div>
+    </div>
+    <% } %>
+
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
         <h6 class="mb-0 fw-semibold text-dark">
