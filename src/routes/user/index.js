@@ -48,4 +48,8 @@ router.post('/bookings/:id/cancel', ...auth, bookingCtrl.cancelBooking);
 router.get('/coupons', ...auth, bookingCtrl.listCoupons);
 router.post('/coupons/validate', ...auth, bookingCtrl.applyCoupon);
 
+// Policies (public - no auth needed)
+router.get('/policies', userCtrl.getPolicies);
+router.get('/policies/:slug', userCtrl.getPolicyBySlug);
+
 module.exports = router;

@@ -6,6 +6,7 @@ const Policy = sequelize.define('Policy', {
   title: { type: DataTypes.STRING, allowNull: false },
   slug: { type: DataTypes.STRING, allowNull: false, unique: true },
   content: { type: DataTypes.TEXT, allowNull: false },
+  icon: { type: DataTypes.STRING, allowNull: true, },
   is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
 }, {
   tableName: 'policies',

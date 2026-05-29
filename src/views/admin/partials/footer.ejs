@@ -5,6 +5,98 @@
 <script>
   // Auto-hide alerts
   setTimeout(() => document.querySelectorAll('.alert').forEach(a => a.remove()), 4000);
+
+  // ─── Form Submit Loader ─────────────────────────────────────────────────────
+  // Shows spinner on submit button + progress bar for forms with file uploads
+  document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', function(e) {
+      const btn = form.querySelector('button[type="submit"], button:not([type])');
+      if (!btn || btn.disabled) return;
+
+      // Disable button and show spinner
+      btn.disabled = true;
+      const originalHTML = btn.innerHTML;
+      btn.dataset.original = originalHTML;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Processing...';
+      btn.style.opacity = '0.8';
+
+      // If form has file input, show progress bar
+      const hasFile = form.querySelector('input[type="file"]');
+      if (hasFile && hasFile.files && hasFile.files.length > 0) {
+        // Create progress bar
+        let progressWrap = form.querySelector('.upload-progress-wrap');
+        if (!progressWrap) {
+          progressWrap = document.createElement('div');
+          progressWrap.className = 'upload-progress-wrap mt-3';
+          progressWrap.innerHTML = `
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="bi bi-cloud-arrow-up text-primary"></i>
+              <small class="text-muted fw-medium upload-status">Uploading...</small>
+            </div>
+            <div class="progress" style="height:6px;border-radius:10px;">
+              <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%"></div>
+            </div>
+            <small class="text-muted upload-percent">0%</small>
+          `;
+          btn.parentNode.insertBefore(progressWrap, btn);
+        }
+        progressWrap.style.display = 'block';
+
+        // Use XHR for progress tracking
+        e.preventDefault();
+        const formData = new FormData(form);
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', function(ev) {
+          if (ev.lengthComputable) {
+            const percent = Math.round((ev.loaded / ev.total) * 100);
+            const bar = progressWrap.querySelector('.progress-bar');
+            const percentText = progressWrap.querySelector('.upload-percent');
+            const statusText = progressWrap.querySelector('.upload-status');
+            bar.style.width = percent + '%';
+            percentText.textContent = percent + '%';
+            if (percent >= 100) {
+              statusText.textContent = 'Saving...';
+              bar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+              bar.classList.add('bg-success');
+            }
+          }
+        });
+
+        xhr.addEventListener('load', function() {
+          // Redirect to same page (server will redirect with flash)
+          window.location.href = xhr.responseURL || form.action;
+        });
+
+        xhr.addEventListener('error', function() {
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+          btn.style.opacity = '1';
+          progressWrap.style.display = 'none';
+          alert('Upload failed. Please try again.');
+        });
+
+        xhr.open(form.method || 'POST', form.action);
+        xhr.send(formData);
+      }
+    });
+  });
 </script>
+
+<!-- Global loader overlay style -->
+<style>
+  .upload-progress-wrap {
+    background: #f8f9ff;
+    border: 1px solid #e8e8f0;
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .upload-progress-wrap .progress {
+    background: #e8e8f0;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+</style>
 </body>
 </html>

@@ -185,7 +185,7 @@ const createBooking = async (req, res) => {
     // Online — create Cashfree order
     const user = await User.findByPk(req.user.id, { attributes: ['name', 'mobile', 'email'] });
     const cfOrderId = `booking_${booking.id}_${Date.now()}`;
-    const returnUrl = `${process.env.APP_URL}api/user/bookings/${booking.id}/payment-verify?cf_order_id=${cfOrderId}`;
+    const returnUrl = `${process.env.APP_URL}/api/user/bookings/${booking.id}/payment-verify?cf_order_id=${cfOrderId}`;
 
     const cfOrder = await createCashfreeOrder({
       orderId: cfOrderId,
@@ -196,14 +196,14 @@ const createBooking = async (req, res) => {
       returnUrl,
     });
 
-    // Save cf_order_id on booking
-    await booking.update({ cf_order_id: cfOrder.cf_order_id });
+    // Save our custom order_id (used for verification with Cashfree API)
+    await booking.update({ cf_order_id: cfOrderId });
 
     return success(res, {
       booking,
       charges,
       payment: {
-        cf_order_id: cfOrder.cf_order_id,
+        cf_order_id: cfOrderId,
         payment_session_id: cfOrder.payment_session_id,
         order_status: cfOrder.order_status,
       },
@@ -373,8 +373,6 @@ const listCoupons = async (req, res) => {
     }
 
     const coupons = await getAvailableCoupons(req.user.id, categoryId);
-    
-    console.log("coupons",coupons);
 
     return success(res, {
       coupons: coupons.map(c => ({

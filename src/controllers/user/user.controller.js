@@ -3,6 +3,7 @@ const Category = require('../../models/category.model');
 const Service = require('../../models/service.model');
 const Booking = require('../../models/booking.model');
 const Slot = require('../../models/slot.model');
+const Policy = require('../../models/policy.model');
 const sequelize = require('../../config/database');
 const { success, error } = require('../../helpers/response.helper');
 
@@ -140,4 +141,28 @@ const getAvailableSlots = async (req, res) => {
   } catch (e) { return error(res, e.message); }
 };
 
-module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getAvailableSlots };
+// GET /api/user/policies
+const getPolicies = async (req, res) => {
+  try {
+    const policies = await Policy.findAll({
+      where: { is_active: true },
+      attributes: ['id', 'title', 'slug','icon'],
+      order: [['title', 'ASC']],
+    });
+    return success(res, { policies });
+  } catch (e) { return error(res, e.message); }
+};
+
+// GET /api/user/policies/:slug
+const getPolicyBySlug = async (req, res) => {
+  try {
+    const policy = await Policy.findOne({
+      where: { slug: req.params.slug, is_active: true },
+      attributes: ['id', 'title', 'slug', 'content', 'updated_at'],
+    });
+    if (!policy) return error(res, 'Policy not found', 404);
+    return success(res, { policy });
+  } catch (e) { return error(res, e.message); }
+};
+
+module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getAvailableSlots, getPolicies, getPolicyBySlug };

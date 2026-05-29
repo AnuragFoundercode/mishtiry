@@ -344,12 +344,15 @@ const updateService = async (req, res) => {
 const bookingDetail = async (req, res) => {
   try {
     const Message = require('../../models/message.model');
+    const Address = require('../../models/address.model');
     const booking = await Booking.findByPk(req.params.id, {
       include: [
         { model: User, attributes: ['name', 'mobile', 'email'] },
-        { model: Service, attributes: ['name', 'description', 'estimated_time'] },
+        { model: Service, attributes: ['name', 'description', 'estimated_time', 'price', 'images'], include: [{ model: Category, attributes: ['id', 'name'], required: false }] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
         { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
+        { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'city', 'state', 'pincode'], required: false },
+        { model: Coupon, attributes: ['id', 'code', 'title', 'discount_type', 'discount_value'], required: false },
       ],
     });
     if (!booking) { req.flash('error', 'Booking not found'); return res.redirect('/admin/bookings'); }
