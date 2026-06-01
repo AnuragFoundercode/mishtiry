@@ -18,13 +18,13 @@ router.get('/profile', ...auth, userCtrl.getProfile);
 router.put('/profile', ...auth, upload.single('profile_image'), userCtrl.updateProfile);
 
 // Categories & Services
-router.get('/categories', ...auth, userCtrl.getCategories);
-router.get('/categories/:id/services', ...auth, userCtrl.getServicesByCategory);
-router.get('/services/popular', ...auth, userCtrl.getPopularServices);
-router.get('/services/:id', ...auth, userCtrl.getServiceDetail);
+router.get('/categories', userCtrl.getCategories);
+router.get('/categories/:id/services',  userCtrl.getServicesByCategory);
+router.get('/services/popular',  userCtrl.getPopularServices);
+router.get('/services/:id',  userCtrl.getServiceDetail);
 
 // Sliders
-router.get('/sliders', ...auth, sliderCtrl.getSliders);
+router.get('/sliders',  sliderCtrl.getSliders);
 
 // Slots
 router.get('/slots', ...auth, userCtrl.getAvailableSlots);
@@ -51,5 +51,11 @@ router.post('/coupons/validate', ...auth, bookingCtrl.applyCoupon);
 // Policies (public - no auth needed)
 router.get('/policies', userCtrl.getPolicies);
 router.get('/policies/:slug', userCtrl.getPolicyBySlug);
+
+// Support/Contact Info (public)
+router.get('/support', userCtrl.getSupport);
+
+// Testimonials (public)
+router.get('/testimonials', userCtrl.getTestimonials);
 
 module.exports = router;

@@ -5,6 +5,8 @@ const {
   Policy, Zone, Worker, Slot, Coupon, CouponUsage,
 } = require('../../models/index');
 const PlatformSetting = require('../../models/platform_setting.model');
+const AppSetting = require('../../models/app_setting.model');
+const Testimonial = require('../../models/testimonial.model');
 const { sendEmailNotification } = require('../../helpers/notification.helper');
 const { getSettings } = require('../../helpers/pricing.helper');
 const { Op } = require('sequelize');
@@ -865,6 +867,112 @@ const couponDetail = async (req, res) => {
   } catch (e) { res.render('admin/error', { message: e.message }); }
 };
 
+// ─── App Settings (Support, Social Media) ─────────────────────────────────────
+const appSettings = async (req, res) => {
+  try {
+    let settings = await AppSetting.findOne({ order: [['id', 'ASC']] });
+    if (!settings) settings = await AppSetting.create({});
+    res.render('admin/app-settings', {
+      title: 'App Settings', page: 'app-settings',
+      settings,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
+
+const updateAppSettings = async (req, res) => {
+  try {
+    let settings = await AppSetting.findOne({ order: [['id', 'ASC']] });
+    if (!settings) settings = await AppSetting.create({});
+
+    const {
+      support_phone, support_email, help_email, careers_email,
+      country, gst_number, business_address,
+      facebook_url, instagram_url, twitter_url, youtube_url, linkedin_url, whatsapp_number,
+      play_store_url, app_store_url, website_url,
+    } = req.body;
+
+    await settings.update({
+      support_phone: support_phone || settings.support_phone,
+      support_email: support_email || settings.support_email,
+      help_email: help_email || settings.help_email,
+      careers_email: careers_email || settings.careers_email,
+      country: country || settings.country,
+      gst_number: gst_number || settings.gst_number,
+      business_address: business_address !== undefined ? business_address : settings.business_address,
+      facebook_url: facebook_url !== undefined ? facebook_url : settings.facebook_url,
+      instagram_url: instagram_url !== undefined ? instagram_url : settings.instagram_url,
+      twitter_url: twitter_url !== undefined ? twitter_url : settings.twitter_url,
+      youtube_url: youtube_url !== undefined ? youtube_url : settings.youtube_url,
+      linkedin_url: linkedin_url !== undefined ? linkedin_url : settings.linkedin_url,
+      whatsapp_number: whatsapp_number !== undefined ? whatsapp_number : settings.whatsapp_number,
+      play_store_url: play_store_url !== undefined ? play_store_url : settings.play_store_url,
+      app_store_url: app_store_url !== undefined ? app_store_url : settings.app_store_url,
+      website_url: website_url !== undefined ? website_url : settings.website_url,
+    });
+
+    req.flash('success', 'App settings updated successfully');
+    res.redirect('/admin/app-settings');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/app-settings'); }
+};
+
+// ─── Testimonials ─────────────────────────────────────────────────────────────
+const testimonials = async (req, res) => {
+  try {
+    const allTestimonials = await Testimonial.findAll({ order: [['sort_order', 'ASC'], ['created_at', 'DESC']] });
+    res.render('admin/testimonials', {
+      title: 'Testimonials', page: 'testimonials',
+      testimonials: allTestimonials,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
+
+const createTestimonial = async (req, res) => {
+  try {
+    const { name, designation, rating, message, sort_order } = req.body;
+    if (!name || !message) { req.flash('error', 'Name and message are required'); return res.redirect('/admin/testimonials'); }
+    const image = req.file?.filename || null;
+    await Testimonial.create({
+      name, designation: designation || null, image,
+      rating: rating || 5.0, message,
+      sort_order: sort_order || 0, is_active: true,
+    });
+    req.flash('success', 'Testimonial added');
+    res.redirect('/admin/testimonials');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/testimonials'); }
+};
+
+const updateTestimonial = async (req, res) => {
+  try {
+    const t = await Testimonial.findByPk(req.params.id);
+    if (!t) { req.flash('error', 'Not found'); return res.redirect('/admin/testimonials'); }
+    const { name, designation, rating, message, sort_order, is_active } = req.body;
+    const image = req.file?.filename || undefined;
+    await t.update({
+      name: name || t.name,
+      designation: designation !== undefined ? designation : t.designation,
+      rating: rating || t.rating,
+      message: message || t.message,
+      sort_order: sort_order !== undefined ? parseInt(sort_order) : t.sort_order,
+      is_active: is_active === '1' || is_active === 'true',
+      ...(image && { image }),
+    });
+    req.flash('success', 'Testimonial updated');
+    res.redirect('/admin/testimonials');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/testimonials'); }
+};
+
+const deleteTestimonial = async (req, res) => {
+  try {
+    await Testimonial.destroy({ where: { id: req.params.id } });
+    req.flash('success', 'Testimonial deleted');
+    res.redirect('/admin/testimonials');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/testimonials'); }
+};
+
 module.exports = {
   showLogin, doLogin, doLogout,
   showForgotPassword, doForgotPassword, showResetPassword, doResetPassword,
@@ -882,4 +990,6 @@ module.exports = {
   workers, createWorker, workerDetail, toggleBlockWorker, assignWorker,
   slots, createSlotWeb, updateSlotWeb, deleteSlotWeb,
   coupons, createCouponWeb, updateCouponWeb, deleteCouponWeb, toggleCouponWeb, couponDetail,
+  appSettings, updateAppSettings,
+  testimonials, createTestimonial, updateTestimonial, deleteTestimonial,
 };

@@ -54,9 +54,9 @@ const deleteSlider = async (req, res) => {
 
 const getSliders = async (req, res) => {
   try {
-    const role = req.user.role; // 'user' or 'vendor'
+  //  const role = req.user.role; // 'user' or 'vendor'
     const sliderList = await Slider.findAll({
-      where: { is_active: true, type: ['both', role] },
+      where: { is_active: true },
       attributes: ['id', 'title', 'subtitle', 'image', 'link', 'sort_order'],
       order: [['sort_order', 'ASC']],
     });

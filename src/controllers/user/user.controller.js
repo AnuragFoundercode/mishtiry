@@ -4,6 +4,8 @@ const Service = require('../../models/service.model');
 const Booking = require('../../models/booking.model');
 const Slot = require('../../models/slot.model');
 const Policy = require('../../models/policy.model');
+const AppSetting = require('../../models/app_setting.model');
+const Testimonial = require('../../models/testimonial.model');
 const sequelize = require('../../config/database');
 const { success, error } = require('../../helpers/response.helper');
 
@@ -165,4 +167,50 @@ const getPolicyBySlug = async (req, res) => {
   } catch (e) { return error(res, e.message); }
 };
 
-module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getAvailableSlots, getPolicies, getPolicyBySlug };
+// GET /api/user/support
+const getSupport = async (req, res) => {
+  try {
+    let settings = await AppSetting.findOne({ order: [['id', 'ASC']] });
+    if (!settings) settings = await AppSetting.create({});
+    return success(res, {
+      support: {
+        phone: settings.support_phone,
+        email: settings.support_email,
+        help_email: settings.help_email,
+        careers_email: settings.careers_email,
+      },
+      business: {
+        country: settings.country,
+        gst_number: settings.gst_number,
+        address: settings.business_address,
+      },
+      social: {
+        facebook: settings.facebook_url,
+        instagram: settings.instagram_url,
+        twitter: settings.twitter_url,
+        youtube: settings.youtube_url,
+        linkedin: settings.linkedin_url,
+        whatsapp: settings.whatsapp_number,
+      },
+      app_links: {
+        play_store: settings.play_store_url,
+        app_store: settings.app_store_url,
+        website: settings.website_url,
+      },
+    });
+  } catch (e) { return error(res, e.message); }
+};
+
+// GET /api/user/testimonials
+const getTestimonials = async (req, res) => {
+  try {
+    const testimonials = await Testimonial.findAll({
+      where: { is_active: true },
+      attributes: ['id', 'name', 'designation', 'image', 'rating', 'message'],
+      order: [['sort_order', 'ASC'], ['created_at', 'DESC']],
+    });
+    return success(res, { testimonials });
+  } catch (e) { return error(res, e.message); }
+};
+
+module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getAvailableSlots, getPolicies, getPolicyBySlug, getSupport, getTestimonials };

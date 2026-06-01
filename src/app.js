@@ -10,12 +10,16 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: false }));
 app.use(cors());
 // app.use(morgan('dev')); // Commented out to reduce logs
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(process.env.UPLOAD_PATH || './src/uploads'));
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+}, express.static(process.env.UPLOAD_PATH || './src/uploads'));
 app.use('/admin/public', express.static(path.join(__dirname, 'public/admin')));
 
 // Session + Flash (for admin panel)

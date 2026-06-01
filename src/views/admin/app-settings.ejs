@@ -1,0 +1,166 @@
+<%- include('partials/header') %>
+
+<% if(success&&success.length){ %>
+  <div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i><%= success %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+<% if(error&&error.length){ %>
+  <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+<% } %>
+
+<form method="POST" action="/admin/app-settings">
+  <div class="row g-4">
+
+    <!-- Support & Contact -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-headset me-2 text-primary"></i>Support & Contact
+          </h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-medium">Support Phone</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-phone"></i></span>
+              <input type="text" name="support_phone" class="form-control" value="<%= settings.support_phone || '' %>" placeholder="+91 1234567890"/>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-medium">Support Email</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+              <input type="email" name="support_email" class="form-control" value="<%= settings.support_email || '' %>" placeholder="support@mishtry.shop"/>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-medium">Help Email</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-question-circle"></i></span>
+              <input type="email" name="help_email" class="form-control" value="<%= settings.help_email || '' %>" placeholder="help@withpronto.com"/>
+            </div>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-medium">Careers Email</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+              <input type="email" name="careers_email" class="form-control" value="<%= settings.careers_email || '' %>" placeholder="careers@withpronto.com"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Business Info -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-building me-2 text-success"></i>Business Info
+          </h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-medium">Country</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-globe"></i></span>
+              <input type="text" name="country" class="form-control" value="<%= settings.country || '' %>" placeholder="India"/>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-medium">GST Number</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-receipt"></i></span>
+              <input type="text" name="gst_number" class="form-control" value="<%= settings.gst_number || '' %>" placeholder="GSTIN000000"/>
+            </div>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-medium">Business Address</label>
+            <textarea name="business_address" class="form-control" rows="3" placeholder="Full business address"><%= settings.business_address || '' %></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Social Media Links -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-share me-2 text-info"></i>Social Media Links
+          </h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-medium"><i class="bi bi-facebook text-primary me-1"></i>Facebook</label>
+            <input type="url" name="facebook_url" class="form-control" value="<%= settings.facebook_url || '' %>" placeholder="https://facebook.com/yourpage"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-medium"><i class="bi bi-instagram text-danger me-1"></i>Instagram</label>
+            <input type="url" name="instagram_url" class="form-control" value="<%= settings.instagram_url || '' %>" placeholder="https://instagram.com/yourpage"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-medium"><i class="bi bi-twitter-x me-1"></i>Twitter / X</label>
+            <input type="url" name="twitter_url" class="form-control" value="<%= settings.twitter_url || '' %>" placeholder="https://x.com/yourhandle"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-medium"><i class="bi bi-youtube text-danger me-1"></i>YouTube</label>
+            <input type="url" name="youtube_url" class="form-control" value="<%= settings.youtube_url || '' %>" placeholder="https://youtube.com/@yourchannel"/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-medium"><i class="bi bi-linkedin text-primary me-1"></i>LinkedIn</label>
+            <input type="url" name="linkedin_url" class="form-control" value="<%= settings.linkedin_url || '' %>" placeholder="https://linkedin.com/company/yourcompany"/>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-medium"><i class="bi bi-whatsapp text-success me-1"></i>WhatsApp Number</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-whatsapp text-success"></i></span>
+              <input type="text" name="whatsapp_number" class="form-control" value="<%= settings.whatsapp_number || '' %>" placeholder="+91 1234567890"/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- App Links -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+          <h6 class="mb-0 fw-semibold text-dark">
+            <i class="bi bi-phone me-2 text-warning"></i>App Links
+          </h6>
+        </div>
+        <div class="card-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-medium"><i class="bi bi-google-play text-success me-1"></i>Play Store URL</label>
+            <input type="url" name="play_store_url" class="form-control" value="<%= settings.play_store_url || '' %>" placeholder="https://play.google.com/store/apps/details?id=..."/>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-medium"><i class="bi bi-apple me-1"></i>App Store URL</label>
+            <input type="url" name="app_store_url" class="form-control" value="<%= settings.app_store_url || '' %>" placeholder="https://apps.apple.com/app/..."/>
+          </div>
+          <div class="mb-0">
+            <label class="form-label fw-medium"><i class="bi bi-globe2 me-1"></i>Website URL</label>
+            <input type="url" name="website_url" class="form-control" value="<%= settings.website_url || '' %>" placeholder="https://mishtry.shop"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Button -->
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary px-4 py-2">
+        <i class="bi bi-check-lg me-1"></i>Save All Settings
+      </button>
+    </div>
+
+  </div>
+</form>
+
+<%- include('partials/footer') %>

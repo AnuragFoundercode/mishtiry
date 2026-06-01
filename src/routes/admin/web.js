@@ -97,4 +97,14 @@ router.post('/coupons/:id/update', guard, ctrl.updateCouponWeb);
 router.post('/coupons/:id/delete', guard, ctrl.deleteCouponWeb);
 router.post('/coupons/:id/toggle', guard, ctrl.toggleCouponWeb);
 
+// App Settings (Support, Social Media)
+router.get('/app-settings', guard, ctrl.appSettings);
+router.post('/app-settings', guard, ctrl.updateAppSettings);
+
+// Testimonials
+router.get('/testimonials', guard, ctrl.testimonials);
+router.post('/testimonials', guard, upload.single('image'), ctrl.createTestimonial);
+router.post('/testimonials/:id/update', guard, upload.single('image'), ctrl.updateTestimonial);
+router.post('/testimonials/:id/delete', guard, ctrl.deleteTestimonial);
+
 module.exports = router;
