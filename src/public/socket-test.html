@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Socket.IO Test — Mishtiry</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', -apple-system, sans-serif; background: #f5f6fa; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.4rem; margin-bottom: 20px; color: #1a1a2e; }
+    .card { background: #fff; border-radius: 14px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+    .card h3 { font-size: .9rem; margin-bottom: 12px; color: #555; }
+    .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .status.connected { background: #dcfce7; color: #166534; }
+    .status.disconnected { background: #fee2e2; color: #991b1b; }
+    input, select, button { font-size: .85rem; padding: 8px 12px; border-radius: 8px; border: 1px solid #e0e0e0; outline: none; }
+    input:focus { border-color: #6c47ff; }
+    button { background: #6c47ff; color: #fff; border: none; cursor: pointer; font-weight: 600; }
+    button:hover { background: #5535e0; }
+    button.danger { background: #ef4444; }
+    button.success { background: #22c55e; }
+    button.warning { background: #f59e0b; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+    #logs { background: #0f0e17; color: #a0ffa0; border-radius: 10px; padding: 16px; font-family: 'Fira Code', monospace; font-size: .75rem; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+    .log-entry { margin-bottom: 4px; padding: 2px 0; border-bottom: 1px solid #1e1e30; }
+    .log-entry.sent { color: #93c5fd; }
+    .log-entry.received { color: #86efac; }
+    .log-entry.error { color: #fca5a5; }
+    .log-entry.info { color: #fde68a; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🔌 Socket.IO Test Panel</h1>
+
+  <!-- Connection -->
+  <div class="card">
+    <h3>Connection</h3>
+    <div class="row">
+      <input type="text" id="serverUrl" value="https://mishtiry.giftaura.shop" placeholder="Server URL" style="width:280px;"/>
+      <input type="text" id="token" placeholder="JWT Token" style="flex:1;"/>
+    </div>
+    <div class="row">
+      <button onclick="connectSocket()">Connect</button>
+      <button class="danger" onclick="disconnectSocket()">Disconnect</button>
+      <span id="statusBadge" class="status disconnected">Disconnected</span>
+    </div>
+  </div>
+
+  <!-- Worker Availability -->
+  <div class="card">
+    <h3>Worker Availability</h3>
+    <div class="row">
+      <select id="availStatus">
+        <option value="online">Online</option>
+        <option value="offline">Offline</option>
+        <option value="busy">Busy</option>
+      </select>
+      <input type="text" id="lat" placeholder="Latitude" value="22.7196" style="width:120px;"/>
+      <input type="text" id="lng" placeholder="Longitude" value="75.8577" style="width:120px;"/>
+      <button class="success" onclick="sendAvailability()">Set Status</button>
+    </div>
+    <div class="row">
+      <button class="warning" onclick="sendLocation()">Update Location Only</button>
+    </div>
+  </div>
+
+  <!-- Booking Actions -->
+  <div class="card">
+    <h3>Booking Actions</h3>
+    <div class="row">
+      <input type="number" id="bookingId" placeholder="Booking ID" style="width:140px;"/>
+      <button class="success" onclick="acceptBooking()">Accept Booking</button>
+      <button class="danger" onclick="rejectBooking()">Reject Booking</button>
+    </div>
+  </div>
+
+  <!-- Custom Emit -->
+  <div class="card">
+    <h3>Custom Emit</h3>
+    <div class="row">
+      <input type="text" id="customEvent" placeholder="Event name" style="width:180px;"/>
+      <input type="text" id="customData" placeholder='JSON data e.g. {"key":"value"}' style="flex:1;"/>
+      <button onclick="customEmit()">Emit</button>
+    </div>
+  </div>
+
+  <!-- Logs -->
+  <div class="card">
+    <h3>Logs <button onclick="clearLogs()" style="font-size:.7rem;padding:4px 10px;background:#333;">Clear</button></h3>
+    <div id="logs"></div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script>
+let socket = null;
+
+function log(msg, type = 'info') {
+  const el = document.getElementById('logs');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + type;
+  entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  el.appendChild(entry);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLogs() { document.getElementById('logs').innerHTML = ''; }
+
+function updateStatus(connected) {
+  const badge = document.getElementById('statusBadge');
+  badge.textContent = connected ? 'Connected' : 'Disconnected';
+  badge.className = 'status ' + (connected ? 'connected' : 'disconnected');
+}
+
+function connectSocket() {
+  const url = document.getElementById('serverUrl').value.trim();
+  const token = document.getElementById('token').value.trim();
+
+  if (!url) { log('Server URL required', 'error'); return; }
+  if (!token) { log('Token required', 'error'); return; }
+
+  if (socket) { socket.disconnect(); }
+
+  log(`Connecting to ${url}...`, 'info');
+
+  socket = io(url, {
+    auth: { token },
+    transports: ['websocket'],
+    reconnection: true,
+  });
+
+  socket.on('connect', () => {
+    log('✅ Connected! Socket ID: ' + socket.id, 'received');
+    updateStatus(true);
+  });
+
+  socket.on('disconnect', (reason) => {
+    log('❌ Disconnected: ' + reason, 'error');
+    updateStatus(false);
+  });
+
+  socket.on('connect_error', (err) => {
+    log('⚠️ Connection error: ' + err.message, 'error');
+    updateStatus(false);
+  });
+
+  // Listen to all worker events
+  socket.on('new_booking_alert', (data) => {
+    log('🔔 NEW BOOKING ALERT: ' + JSON.stringify(data), 'received');
+  });
+
+  socket.on('booking_response', (data) => {
+    log('📋 Booking Response: ' + JSON.stringify(data), 'received');
+  });
+
+  socket.on('availability_updated', (data) => {
+    log('🟢 Availability Updated: ' + JSON.stringify(data), 'received');
+  });
+
+  socket.on('booking_accepted', (data) => {
+    log('✅ Booking Accepted: ' + JSON.stringify(data), 'received');
+  });
+
+  socket.on('booking_updated', (data) => {
+    log('📝 Booking Updated: ' + JSON.stringify(data), 'received');
+  });
+
+  socket.on('payment_confirmed', (data) => {
+    log('💰 Payment Confirmed: ' + JSON.stringify(data), 'received');
+  });
+
+  socket.on('receive_message', (data) => {
+    log('💬 Message: ' + JSON.stringify(data), 'received');
+  });
+
+  // Catch-all for any event
+  socket.onAny((event, ...args) => {
+    if (!['connect','disconnect','connect_error'].includes(event)) {
+      // Already logged above for known events, but catch unknown ones
+    }
+  });
+}
+
+function disconnectSocket() {
+  if (socket) { socket.disconnect(); socket = null; }
+  log('Manually disconnected', 'info');
+  updateStatus(false);
+}
+
+function sendAvailability() {
+  if (!socket || !socket.connected) { log('Not connected!', 'error'); return; }
+  const status = document.getElementById('availStatus').value;
+  const latitude = parseFloat(document.getElementById('lat').value) || null;
+  const longitude = parseFloat(document.getElementById('lng').value) || null;
+  const payload = { status, latitude, longitude };
+  socket.emit('worker_availability', payload);
+  log('📤 Emit worker_availability: ' + JSON.stringify(payload), 'sent');
+}
+
+function sendLocation() {
+  if (!socket || !socket.connected) { log('Not connected!', 'error'); return; }
+  const latitude = parseFloat(document.getElementById('lat').value);
+  const longitude = parseFloat(document.getElementById('lng').value);
+  if (!latitude || !longitude) { log('Latitude/Longitude required', 'error'); return; }
+  const payload = { latitude, longitude };
+  socket.emit('worker_location', payload);
+  log('📤 Emit worker_location: ' + JSON.stringify(payload), 'sent');
+}
+
+function acceptBooking() {
+  if (!socket || !socket.connected) { log('Not connected!', 'error'); return; }
+  const booking_id = parseInt(document.getElementById('bookingId').value);
+  if (!booking_id) { log('Booking ID required', 'error'); return; }
+  socket.emit('accept_booking', { booking_id });
+  log('📤 Emit accept_booking: ' + JSON.stringify({ booking_id }), 'sent');
+}
+
+function rejectBooking() {
+  if (!socket || !socket.connected) { log('Not connected!', 'error'); return; }
+  const booking_id = parseInt(document.getElementById('bookingId').value);
+  if (!booking_id) { log('Booking ID required', 'error'); return; }
+  socket.emit('reject_booking', { booking_id });
+  log('📤 Emit reject_booking: ' + JSON.stringify({ booking_id }), 'sent');
+}
+
+function customEmit() {
+  if (!socket || !socket.connected) { log('Not connected!', 'error'); return; }
+  const event = document.getElementById('customEvent').value.trim();
+  const dataStr = document.getElementById('customData').value.trim();
+  if (!event) { log('Event name required', 'error'); return; }
+  let data = {};
+  try { data = dataStr ? JSON.parse(dataStr) : {}; } catch(e) { log('Invalid JSON: ' + e.message, 'error'); return; }
+  socket.emit(event, data);
+  log('📤 Emit ' + event + ': ' + JSON.stringify(data), 'sent');
+}
+</script>
+</body>
+</html>

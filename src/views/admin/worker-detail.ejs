@@ -7,128 +7,222 @@
   <div class="alert alert-danger alert-dismissible fade show"><i class="bi bi-exclamation-triangle-fill me-2"></i><%= error %><button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
 <% } %>
 
+<% const statusColor = { pending: 'warning', approved: 'success', rejected: 'danger' }; %>
+<% const availColor = { online: 'success', offline: 'secondary', busy: 'warning' }; %>
+<% const workerServiceIds = (worker.Services || []).map(s => s.id); %>
+<% const sc={pending:'warning',accepted:'info',in_progress:'primary',completed:'success',cancelled:'danger'}; %>
+
+<!-- Back + Title -->
 <div class="d-flex align-items-center gap-3 mb-4">
-  <a href="/admin/workers" class="btn btn-sm btn-light"><i class="bi bi-arrow-left me-1"></i>Back</a>
-  <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge-fill me-2 text-primary"></i><%= worker.name %></h5>
-  <form method="POST" action="/admin/workers/<%= worker.id %>/toggle-block" class="ms-auto">
-    <button class="btn btn-sm <%= worker.is_blocked ? 'btn-success' : 'btn-danger' %>"
-      onclick="return confirm('<%= worker.is_blocked ? 'Unblock' : 'Block' %> this worker?')">
-      <i class="bi bi-<%= worker.is_blocked ? 'check-circle' : 'x-circle' %> me-1"></i>
-      <%= worker.is_blocked ? 'Unblock' : 'Block' %>
-    </button>
-  </form>
+  <a href="/admin/workers" class="btn btn-sm btn-light"><i class="bi bi-arrow-left"></i></a>
+  <h5 class="mb-0 fw-bold">Worker Details</h5>
 </div>
 
-<div class="row g-3 mb-4">
-  <div class="col-md-3">
-    <div class="card text-center p-3">
-      <div class="text-muted small mb-1">Total Assigned</div>
-      <div class="fw-bold fs-4 text-primary"><%= assignedBookings.length %></div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-center p-3">
-      <div class="text-muted small mb-1">Completed</div>
-      <div class="fw-bold fs-4 text-success"><%= assignedBookings.filter(b=>b.status==='completed').length %></div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-center p-3">
-      <div class="text-muted small mb-1">COD Collected</div>
-      <div class="fw-bold fs-4 text-warning">₹<%= totalCollected.toFixed(2) %></div>
-    </div>
-  </div>
-  <div class="col-md-3">
-    <div class="card text-center p-3">
-      <div class="text-muted small mb-1">Admin Due (COD)</div>
-      <div class="fw-bold fs-4 text-danger">₹<%= totalAdminDue.toFixed(2) %></div>
+<!-- Profile Row -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-4">
+    <div class="row align-items-center">
+      <div class="col-md-6">
+        <div class="d-flex align-items-center gap-3">
+          <% if(worker.profile_image){ %>
+            <img src="/uploads/<%= worker.profile_image %>" class="rounded-circle shadow-sm" style="width:72px;height:72px;object-fit:cover;border:3px solid var(--primary-light);"/>
+          <% } else { %>
+            <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width:72px;height:72px;background:var(--primary-light);">
+              <span class="fw-bold" style="font-size:1.8rem;color:var(--primary);"><%= worker.name[0].toUpperCase() %></span>
+            </div>
+          <% } %>
+          <div>
+            <h5 class="fw-bold mb-1"><%= worker.name %> <small class="text-muted fw-normal">#<%= worker.id %></small></h5>
+            <div class="d-flex align-items-center gap-2 text-muted small">
+              <span><i class="bi bi-phone me-1"></i><%= worker.phone %></span>
+              <% if(worker.email){ %><span><i class="bi bi-envelope me-1"></i><%= worker.email %></span><% } %>
+            </div>
+            <div class="d-flex gap-2 mt-2">
+              <span class="badge bg-<%= availColor[worker.availability] || 'secondary' %> rounded-pill"><%= worker.availability || 'offline' %></span>
+              <span class="badge bg-<%= statusColor[worker.status] || 'secondary' %> rounded-pill"><%= worker.status %></span>
+              <% if(worker.is_blocked){ %><span class="badge bg-danger rounded-pill">Blocked</span><% } %>
+              <% if(worker.Zone){ %><span class="badge bg-light text-dark border rounded-pill"><i class="bi bi-geo-alt me-1"></i><%= worker.Zone.name %></span><% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6 mt-3 mt-md-0">
+        <div class="row g-2 text-center">
+          <div class="col-3">
+            <div class="fw-bold fs-5 text-primary"><%= assignedBookings.length %></div>
+            <div class="text-muted" style="font-size:.65rem;font-weight:600;">BOOKINGS</div>
+          </div>
+          <div class="col-3">
+            <div class="fw-bold fs-5 text-success"><%= assignedBookings.filter(b=>b.status==='completed').length %></div>
+            <div class="text-muted" style="font-size:.65rem;font-weight:600;">COMPLETED</div>
+          </div>
+          <div class="col-3">
+            <div class="fw-bold fs-5 text-warning"><%= worker.rating || '0.0' %></div>
+            <div class="text-muted" style="font-size:.65rem;font-weight:600;">RATING</div>
+          </div>
+          <div class="col-3">
+            <div class="fw-bold fs-5 text-info">₹<%= parseFloat(worker.wallet || 0).toFixed(0) %></div>
+            <div class="text-muted" style="font-size:.65rem;font-weight:600;">WALLET</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<div class="row g-3">
-  <!-- Worker Info -->
+<!-- Main Content: 3 Column Grid -->
+<div class="row g-4">
+
+  <!-- Col 1: Actions -->
   <div class="col-lg-4">
-    <div class="card">
-      <div class="card-header"><i class="bi bi-person-fill me-2 text-primary"></i>Worker Info</div>
-      <div class="card-body">
-        <table class="table table-sm mb-0">
-          <tr><td class="text-muted">Name</td><td class="fw-semibold"><%= worker.name %></td></tr>
-          <tr><td class="text-muted">Phone</td><td><%= worker.phone %></td></tr>
-          <tr><td class="text-muted">Email</td><td><%= worker.email || '—' %></td></tr>
-          <tr><td class="text-muted">Aadhaar</td><td><%= worker.aadhaar_number ? worker.aadhaar_number.replace(/\d(?=\d{4})/g,'*') : '—' %></td></tr>
-          <tr><td class="text-muted">Status</td><td>
-            <% if(worker.is_blocked){ %>
-              <span class="badge bg-danger">Blocked</span>
-            <% } else { %>
-              <span class="badge bg-success">Active</span>
-            <% } %>
-          </td></tr>
-          <tr><td class="text-muted">Joined</td><td><small><%= formatDate(worker.created_at) %></small></td></tr>
-        </table>
-        <% if(worker.aadhaar_front || worker.aadhaar_back){ %>
-          <hr>
-          <p class="text-muted small fw-semibold mb-2">Aadhaar Documents</p>
-          <div class="d-flex gap-2">
+    <!-- Approval -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3">
+        <label class="form-label text-muted small fw-semibold mb-2"><i class="bi bi-shield-check me-1"></i>Approval Status</label>
+        <form method="POST" action="/admin/workers/<%= worker.id %>/update-status">
+          <div class="btn-group w-100">
+            <% ['pending', 'approved', 'rejected'].forEach(s => { %>
+              <button type="submit" name="status" value="<%= s %>"
+                class="btn btn-sm <%= worker.status === s ? 'btn-'+statusColor[s] : 'btn-outline-'+statusColor[s] %>"
+                <%= worker.status === s ? 'disabled' : '' %>>
+                <%= s.charAt(0).toUpperCase() + s.slice(1) %>
+              </button>
+            <% }) %>
+          </div>
+        </form>
+        <form method="POST" action="/admin/workers/<%= worker.id %>/toggle-block" class="mt-2">
+          <button class="btn btn-sm w-100 <%= worker.is_blocked ? 'btn-outline-success' : 'btn-outline-danger' %>"
+            onclick="return confirm('<%= worker.is_blocked ? 'Unblock' : 'Block' %> this worker?')">
+            <i class="bi bi-<%= worker.is_blocked ? 'unlock' : 'lock' %> me-1"></i><%= worker.is_blocked ? 'Unblock' : 'Block' %>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Zone -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3">
+        <label class="form-label text-muted small fw-semibold mb-2"><i class="bi bi-geo-alt me-1"></i>Zone / City</label>
+        <form method="POST" action="/admin/workers/<%= worker.id %>/update-zone">
+          <div class="input-group input-group-sm">
+            <select name="zone_id" class="form-select">
+              <option value="">— No Zone —</option>
+              <% allZones.forEach(z => { %>
+                <option value="<%= z.id %>" <%= worker.zone_id == z.id ? 'selected' : '' %>><%= z.name %></option>
+              <% }) %>
+            </select>
+            <button class="btn btn-primary" type="submit"><i class="bi bi-check-lg"></i></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Aadhaar -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body p-3">
+        <label class="form-label text-muted small fw-semibold mb-2"><i class="bi bi-credit-card-2-front me-1"></i>Aadhaar / KYC</label>
+        <div class="small mb-2">Number: <span class="fw-semibold font-monospace"><%= worker.aadhaar_number || '—' %></span></div>
+        <div class="row g-2">
+          <div class="col-6">
             <% if(worker.aadhaar_front){ %>
-              <a href="/uploads/<%= worker.aadhaar_front %>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-image me-1"></i>Front</a>
-            <% } %>
-            <% if(worker.aadhaar_back){ %>
-              <a href="/uploads/<%= worker.aadhaar_back %>" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-image me-1"></i>Back</a>
+              <a href="/uploads/<%= worker.aadhaar_front %>" target="_blank"><img src="/uploads/<%= worker.aadhaar_front %>" class="rounded border w-100" style="height:70px;object-fit:cover;"/></a>
+              <div class="text-muted text-center" style="font-size:.65rem;">Front</div>
+            <% } else { %>
+              <div class="border rounded text-center py-3 bg-light"><i class="bi bi-image text-muted"></i><div class="text-muted" style="font-size:.6rem;">No Front</div></div>
             <% } %>
           </div>
-        <% } %>
+          <div class="col-6">
+            <% if(worker.aadhaar_back){ %>
+              <a href="/uploads/<%= worker.aadhaar_back %>" target="_blank"><img src="/uploads/<%= worker.aadhaar_back %>" class="rounded border w-100" style="height:70px;object-fit:cover;"/></a>
+              <div class="text-muted text-center" style="font-size:.65rem;">Back</div>
+            <% } else { %>
+              <div class="border rounded text-center py-3 bg-light"><i class="bi bi-image text-muted"></i><div class="text-muted" style="font-size:.6rem;">No Back</div></div>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Profile -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <label class="form-label text-muted small fw-semibold mb-2"><i class="bi bi-pencil me-1"></i>Edit Profile</label>
+        <form method="POST" action="/admin/workers/<%= worker.id %>/update-profile" enctype="multipart/form-data">
+          <input type="text" name="name" class="form-control form-control-sm mb-2" value="<%= worker.name %>" placeholder="Name"/>
+          <input type="text" name="phone" class="form-control form-control-sm mb-2" value="<%= worker.phone %>" placeholder="Phone"/>
+          <input type="email" name="email" class="form-control form-control-sm mb-2" value="<%= worker.email || '' %>" placeholder="Email"/>
+          <input type="file" name="profile_image" class="form-control form-control-sm mb-2" accept="image/*"/>
+          <button class="btn btn-primary btn-sm w-100"><i class="bi bi-check-lg me-1"></i>Save</button>
+        </form>
       </div>
     </div>
   </div>
 
-  <!-- Assigned Bookings -->
-  <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header"><i class="bi bi-calendar-check me-2 text-primary"></i>Assigned Bookings</div>
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
-            <tr><th>#</th><th>Customer</th><th>Service</th><th>Date</th><th>Payment</th><th>COD</th><th>Status</th></tr>
+  <!-- Col 2: Services -->
+  <div class="col-lg-3">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <label class="form-label text-muted small fw-semibold mb-0"><i class="bi bi-tools me-1"></i>Services</label>
+          <span class="badge bg-primary rounded-pill" style="font-size:.65rem;"><%= workerServiceIds.length %></span>
+        </div>
+        <form method="POST" action="/admin/workers/<%= worker.id %>/update-services">
+          <div style="max-height:400px;overflow-y:auto;">
+            <% allServices.forEach(s => { %>
+              <label class="d-flex align-items-center gap-2 p-2 rounded-2 mb-1" style="cursor:pointer;font-size:.82rem;<%= workerServiceIds.includes(s.id) ? 'background:var(--primary-light);' : '' %>">
+                <input class="form-check-input m-0" type="checkbox" name="service_ids" value="<%= s.id %>" <%= workerServiceIds.includes(s.id) ? 'checked' : '' %>>
+                <span class="<%= workerServiceIds.includes(s.id) ? 'fw-semibold' : '' %>"><%= s.name %></span>
+              </label>
+            <% }) %>
+          </div>
+          <button class="btn btn-primary btn-sm w-100 mt-3"><i class="bi bi-check-lg me-1"></i>Update</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Col 3: Bookings -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-header bg-white border-bottom py-3">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fw-semibold small"><i class="bi bi-calendar-check me-2 text-primary"></i>Bookings</span>
+          <span class="badge bg-primary rounded-pill" style="font-size:.65rem;"><%= assignedBookings.length %></span>
+        </div>
+      </div>
+
+      <% const codPaid = assignedBookings.filter(b => b.payment_method === 'cod' && b.payment_status === 'paid'); %>
+      <% if(codPaid.length){ %>
+      <div class="d-flex gap-4 px-3 py-2 border-bottom" style="background:#fefce8;">
+        <small class="text-success fw-semibold"><i class="bi bi-cash me-1"></i>Collected: ₹<%= totalCollected.toFixed(0) %></small>
+        <small class="text-danger fw-semibold"><i class="bi bi-exclamation-triangle me-1"></i>Due: ₹<%= totalAdminDue.toFixed(0) %></small>
+      </div>
+      <% } %>
+
+      <div class="table-responsive" style="max-height:500px;overflow-y:auto;">
+        <table class="table table-hover mb-0" style="font-size:.8rem;">
+          <thead class="table-light sticky-top">
+            <tr><th>#</th><th>Customer</th><th>Service</th><th>₹</th><th>Status</th></tr>
           </thead>
           <tbody>
-          <% const sc={pending:'warning',accepted:'info',in_progress:'primary',completed:'success',cancelled:'danger'}; %>
           <% assignedBookings.forEach(b => { %>
             <tr>
-              <td><a href="/admin/bookings/<%= b.id %>" class="text-primary fw-semibold">#<%= b.id %></a></td>
-              <td>
-                <div class="fw-medium"><%= b.User?.name || '—' %></div>
-                <small class="text-muted"><%= b.User?.mobile || '' %></small>
-              </td>
-              <td><small><%= b.Service?.name || '—' %></small></td>
-              <td><small class="text-muted"><%= formatDate(b.booking_date) %></small></td>
-              <td>
-                <% if(b.payment_method === 'cod'){ %>
-                  <span class="badge bg-warning text-dark">COD</span>
-                <% } else { %>
-                  <span class="badge bg-info">Online</span>
-                <% } %>
-                <span class="badge bg-<%= b.payment_status==='paid'?'success':b.payment_status==='refunded'?'warning':'secondary' %> ms-1"><%= b.payment_status %></span>
-              </td>
-              <td>
-                <% if(b.payment_method === 'cod' && b.payment_status === 'paid'){ %>
-                  <small class="text-success fw-semibold">Collected: ₹<%= parseFloat(b.cod_collected||0).toFixed(2) %></small><br>
-                  <small class="text-danger">Due: ₹<%= parseFloat(b.admin_due||0).toFixed(2) %></small>
-                <% } else { %>
-                  <small class="text-muted">—</small>
-                <% } %>
-              </td>
-              <td><span class="badge bg-<%= sc[b.status]||'secondary' %>"><%= b.status %></span></td>
+              <td><a href="/admin/bookings/<%= b.id %>" class="text-primary fw-medium">#<%= b.id %></a></td>
+              <td><%= b.User?.name || '—' %></td>
+              <td><%= b.Service?.name || '—' %></td>
+              <td class="fw-medium">₹<%= parseFloat(b.total_amount||0).toFixed(0) %></td>
+              <td><span class="badge bg-<%= sc[b.status]||'secondary' %>" style="font-size:.6rem;"><%= b.status.replace('_',' ') %></span></td>
             </tr>
           <% }) %>
           <% if(!assignedBookings.length){ %>
-            <tr><td colspan="7" class="text-center py-4 text-muted">No bookings assigned yet</td></tr>
+            <tr><td colspan="5" class="text-center py-4 text-muted small">No bookings yet</td></tr>
           <% } %>
           </tbody>
         </table>
       </div>
     </div>
   </div>
+
 </div>
 
 <%- include('partials/footer') %>

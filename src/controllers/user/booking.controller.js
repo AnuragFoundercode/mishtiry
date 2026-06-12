@@ -8,7 +8,7 @@ const Slot = require('../../models/slot.model');
 const Coupon = require('../../models/coupon.model');
 const Notification = require('../../models/notification.model');
 const { success, error } = require('../../helpers/response.helper');
-const { emitToUser } = require('../../sockets/socket.handler');
+const { emitToUser, alertNearbyWorkers } = require('../../sockets/socket.handler');
 const { calculateBookingCharges } = require('../../helpers/pricing.helper');
 const { validateCoupon, recordCouponUsage, getAvailableCoupons } = require('../../helpers/coupon.helper');
 const { findZoneByCoordinates } = require('../../helpers/zone.helper');
@@ -179,6 +179,8 @@ const createBooking = async (req, res) => {
 
     // COD — return booking directly
     if (isCod) {
+      // Alert nearby online workers
+      if (_io) alertNearbyWorkers(_io, booking, address);
       return success(res, { booking, charges }, 'Booking created. Pay on delivery.', 201);
     }
 
@@ -248,7 +250,12 @@ const verifyPayment = async (req, res) => {
         data: { bookingId: booking.id },
       });
 
-      if (_io) emitToUser(_io, booking.user_id, 'payment_confirmed', { bookingId: booking.id });
+      if (_io) {
+        emitToUser(_io, booking.user_id, 'payment_confirmed', { bookingId: booking.id });
+        // Alert nearby online workers after payment confirmed
+        const bookingAddress = await Address.findByPk(booking.address_id);
+        alertNearbyWorkers(_io, booking, bookingAddress);
+      }
     }
 
     return success(res, {

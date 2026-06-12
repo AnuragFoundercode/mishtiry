@@ -52,6 +52,10 @@ router.get('/workers', guard, ctrl.workers);
 router.post('/workers', guard, upload.fields([{ name: 'aadhaar_front', maxCount: 1 }, { name: 'aadhaar_back', maxCount: 1 }]), ctrl.createWorker);
 router.get('/workers/:id', guard, ctrl.workerDetail);
 router.post('/workers/:id/toggle-block', guard, ctrl.toggleBlockWorker);
+router.post('/workers/:id/update-status', guard, ctrl.updateWorkerStatus);
+router.post('/workers/:id/update-zone', guard, ctrl.updateWorkerZone);
+router.post('/workers/:id/update-services', guard, ctrl.updateWorkerServices);
+router.post('/workers/:id/update-profile', guard, upload.single('profile_image'), ctrl.updateWorkerProfile);
 
 // Revenue
 router.get('/revenue', guard, ctrl.revenue);

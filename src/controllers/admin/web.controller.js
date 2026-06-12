@@ -463,20 +463,57 @@ const notifications = async (req, res) => {
 
 const sendNotification = async (req, res) => {
   try {
+    const { sendPushNotification } = require('../../helpers/notification.helper');
     const { title, body, target_type, specific_ids } = req.body;
-    let userIds = [];
+    let users = [];
+    let workers = [];
 
-    if (target_type === 'all_users' || target_type === 'all') {
-      const all = await User.findAll({ where: { role: 'user' }, attributes: ['id'] });
-      userIds = all.map(u => u.id);
+    if (target_type === 'all_users') {
+      users = await User.findAll({ where: { role: 'user' }, attributes: ['id', 'fcm_token'] });
+    } else if (target_type === 'all_workers') {
+      workers = await Worker.findAll({ attributes: ['id', 'fcm_token'] });
+    } else if (target_type === 'all') {
+      users = await User.findAll({ where: { role: 'user' }, attributes: ['id', 'fcm_token'] });
+      workers = await Worker.findAll({ attributes: ['id', 'fcm_token'] });
     } else if (target_type === 'specific') {
-      userIds = (specific_ids || '').split(',').map(id => parseInt(id.trim())).filter(Boolean);
+      const ids = (specific_ids || '').split(',').map(id => parseInt(id.trim())).filter(Boolean);
+      users = await User.findAll({ where: { id: ids }, attributes: ['id', 'fcm_token'] });
     }
 
-    if (!userIds.length) { req.flash('error', 'No recipients selected'); return res.redirect('/admin/notifications'); }
+    if (!users.length && !workers.length) { req.flash('error', 'No recipients selected'); return res.redirect('/admin/notifications'); }
 
-    await Notification.bulkCreate(userIds.map(uid => ({ user_id: uid, title, body, type: 'promotional' })));
-    req.flash('success', `Notification sent to ${userIds.length} recipient(s)`);
+    console.log(`[Broadcast] Users: ${users.length}, Workers: ${workers.length}`);
+    console.log(`[Broadcast] Workers with FCM:`, workers.filter(w => w.fcm_token).length);
+
+    // Save to DB for users
+    if (users.length) {
+      await Notification.bulkCreate(users.map(u => ({ user_id: u.id, title, body, type: 'promotional' })));
+    }
+
+    // Save to DB for workers
+    if (workers.length) {
+      await Notification.bulkCreate(workers.map(w => ({ worker_id: w.id, title, body, type: 'promotional' })));
+    }
+
+    // Send FCM push to users
+    let pushCount = 0;
+    for (const u of users) {
+      if (u.fcm_token) {
+        await sendPushNotification(u.fcm_token, title, body, { type: 'promotional' });
+        pushCount++;
+      }
+    }
+
+    // Send FCM push to workers
+    for (const w of workers) {
+      if (w.fcm_token) {
+        await sendPushNotification(w.fcm_token, title, body, { type: 'promotional' });
+        pushCount++;
+      }
+    }
+
+    const totalRecipients = users.length + workers.length;
+    req.flash('success', `Notification sent to ${totalRecipients} recipient(s). Push delivered to ${pushCount}.`);
     res.redirect('/admin/notifications');
   } catch (e) { req.flash('error', e.message); res.redirect('/admin/notifications'); }
 };
@@ -619,8 +656,28 @@ const createWorker = async (req, res) => {
 
 const workerDetail = async (req, res) => {
   try {
-    const worker = await Worker.findByPk(req.params.id);
+    const WorkerServiceModel = require('../../models/worker_service.model');
+    let worker = await Worker.findByPk(req.params.id, {
+      include: [
+        { model: Zone, attributes: ['id', 'name'], required: false },
+      ],
+    });
     if (!worker) { req.flash('error', 'Worker not found'); return res.redirect('/admin/workers'); }
+
+    // Get worker's services separately (safer if table doesn't exist yet)
+    let workerServices = [];
+    try {
+      const ws = await WorkerServiceModel.findAll({ where: { worker_id: worker.id } });
+      if (ws.length) {
+        const svcIds = ws.map(w => w.service_id);
+        workerServices = await Service.findAll({ where: { id: svcIds }, attributes: ['id', 'name', 'price'] });
+      }
+    } catch (e) { /* worker_services table may not exist yet */ }
+
+    // Attach services to worker object for template
+    worker = worker.toJSON();
+    worker.Services = workerServices;
+
     const assignedBookings = await Booking.findAll({
       where: { worker_id: worker.id },
       order: [['created_at', 'DESC']],
@@ -635,8 +692,11 @@ const workerDetail = async (req, res) => {
     const totalAdminDue = assignedBookings
       .filter(b => b.payment_method === 'cod' && b.payment_status === 'paid')
       .reduce((s, b) => s + parseFloat(b.admin_due || 0), 0);
+    const allZones = await Zone.findAll({ where: { is_active: true }, attributes: ['id', 'name'], order: [['name', 'ASC']] });
+    const allServices = await Service.findAll({ where: { is_active: true }, attributes: ['id', 'name'], order: [['name', 'ASC']] });
     res.render('admin/worker-detail', {
       title: worker.name, page: 'workers', worker, assignedBookings, totalCollected, totalAdminDue,
+      allZones, allServices,
       adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error'),
     });
   } catch (e) { res.render('admin/error', { message: e.message }); }
@@ -647,6 +707,62 @@ const toggleBlockWorker = async (req, res) => {
   if (worker) await worker.update({ is_blocked: !worker.is_blocked });
   req.flash('success', `Worker ${worker.is_blocked ? 'blocked' : 'unblocked'}`);
   res.redirect(`/admin/workers/${req.params.id}`);
+};
+
+const updateWorkerStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['pending', 'approved', 'rejected'].includes(status)) {
+      req.flash('error', 'Invalid status');
+      return res.redirect(`/admin/workers/${req.params.id}`);
+    }
+    await Worker.update({ status }, { where: { id: req.params.id } });
+    req.flash('success', `Worker status updated to ${status}`);
+    res.redirect(`/admin/workers/${req.params.id}`);
+  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/workers/${req.params.id}`); }
+};
+
+const updateWorkerZone = async (req, res) => {
+  try {
+    const { zone_id } = req.body;
+    await Worker.update({ zone_id: zone_id || null }, { where: { id: req.params.id } });
+    req.flash('success', 'Worker zone updated');
+    res.redirect(`/admin/workers/${req.params.id}`);
+  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/workers/${req.params.id}`); }
+};
+
+const updateWorkerServices = async (req, res) => {
+  try {
+    const WorkerService = require('../../models/worker_service.model');
+    let { service_ids } = req.body;
+    if (!service_ids) service_ids = [];
+    if (!Array.isArray(service_ids)) service_ids = [service_ids];
+
+    await WorkerService.destroy({ where: { worker_id: req.params.id } });
+    if (service_ids.length) {
+      const records = service_ids.map(sid => ({ worker_id: parseInt(req.params.id), service_id: parseInt(sid) }));
+      await WorkerService.bulkCreate(records, { ignoreDuplicates: true });
+    }
+    req.flash('success', 'Worker services updated');
+    res.redirect(`/admin/workers/${req.params.id}`);
+  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/workers/${req.params.id}`); }
+};
+
+const updateWorkerProfile = async (req, res) => {
+  try {
+    const worker = await Worker.findByPk(req.params.id);
+    if (!worker) { req.flash('error', 'Worker not found'); return res.redirect('/admin/workers'); }
+    const { name, email, phone } = req.body;
+    const profile_image = req.file?.filename || undefined;
+    await worker.update({
+      ...(name && { name }),
+      ...(email !== undefined && { email }),
+      ...(phone && { phone }),
+      ...(profile_image && { profile_image }),
+    });
+    req.flash('success', 'Worker profile updated');
+    res.redirect(`/admin/workers/${req.params.id}`);
+  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/workers/${req.params.id}`); }
 };
 
 // POST /admin/bookings/:id/assign-worker  Body: { worker_id }
@@ -987,7 +1103,7 @@ module.exports = {
   doChangePassword,
   policies, createPolicy, updatePolicy, deletePolicy,
   zones, createZone, updateZone, deleteZone,
-  workers, createWorker, workerDetail, toggleBlockWorker, assignWorker,
+  workers, createWorker, workerDetail, toggleBlockWorker, updateWorkerStatus, updateWorkerZone, updateWorkerServices, updateWorkerProfile, assignWorker,
   slots, createSlotWeb, updateSlotWeb, deleteSlotWeb,
   coupons, createCouponWeb, updateCouponWeb, deleteCouponWeb, toggleCouponWeb, couponDetail,
   appSettings, updateAppSettings,

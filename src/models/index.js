@@ -13,6 +13,7 @@ const Address = require('./address.model');
 const Slot = require('./slot.model');
 const Coupon = require('./coupon.model');
 const CouponUsage = require('./coupon_usage.model');
+const WorkerService = require('./worker_service.model');
 
 // Category self-join
 Category.hasMany(Category, { as: 'subcategories', foreignKey: 'parent_id' });
@@ -66,8 +67,19 @@ CouponUsage.belongsTo(Booking, { foreignKey: 'booking_id' });
 Coupon.hasMany(CouponUsage, { foreignKey: 'coupon_id' });
 User.hasMany(CouponUsage, { foreignKey: 'user_id' });
 
+// Worker <-> Zone
+Worker.belongsTo(Zone, { foreignKey: 'zone_id' });
+Zone.hasMany(Worker, { foreignKey: 'zone_id' });
+
+// Worker <-> Services (many-to-many through worker_services)
+Worker.belongsToMany(Service, { through: WorkerService, foreignKey: 'worker_id', otherKey: 'service_id' });
+Service.belongsToMany(Worker, { through: WorkerService, foreignKey: 'service_id', otherKey: 'worker_id' });
+WorkerService.belongsTo(Worker, { foreignKey: 'worker_id' });
+WorkerService.belongsTo(Service, { foreignKey: 'service_id' });
+Worker.hasMany(WorkerService, { foreignKey: 'worker_id' });
+
 module.exports = {
   User, Service, Category, Booking, Review,
   Notification, Message, Policy, Zone, Slider, Worker, Address, Slot,
-  Coupon, CouponUsage,
+  Coupon, CouponUsage, WorkerService,
 };

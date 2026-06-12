@@ -19,32 +19,82 @@ const verifyOtpRecord = async (mobile, otp) => {
   return { valid: true };
 };
 
-// POST /api/worker/auth/send-otp  Body: { phone }
+/**
+ * POST /api/worker/auth/send-otp
+ * Body: { phone }
+ * If worker doesn't exist, auto-creates with status 'pending'
+ */
 const sendOtp = async (req, res) => {
   try {
     const { phone } = req.body;
     if (!phone) return error(res, 'Phone number required', 400);
-    const worker = await Worker.findOne({ where: { phone } });
-    if (!worker) return error(res, 'Worker not registered. Contact admin.', 404);
+
+    let worker = await Worker.findOne({ where: { phone } });
+    let isNew = false;
+
+    // Auto-register if not exists
+    if (!worker) {
+      worker = await Worker.create({
+        name: 'Worker',
+        phone,
+        status: 'pending',
+        is_active: true,
+      });
+      isNew = true;
+    }
+
     if (worker.is_blocked) return error(res, 'Your account is blocked. Contact admin.', 403);
+
     await createAndSendOtp(phone);
-    return success(res, {}, 'OTP sent successfully');
+    return success(res, { is_new: isNew }, 'OTP sent successfully');
   } catch (err) {
     return error(res, err.message);
   }
 };
 
-// POST /api/worker/auth/verify-otp  Body: { phone, otp }
+/**
+ * POST /api/worker/auth/verify-otp
+ * Body: { phone, otp, fcm_token }
+ * Returns token + worker profile
+ */
 const verifyOtp = async (req, res) => {
   try {
-    const { phone, otp } = req.body;
+    const { phone, otp, fcm_token } = req.body;
     if (!phone || !otp) return error(res, 'Phone and OTP required', 400);
+
     const check = await verifyOtpRecord(phone, otp);
     if (!check.valid) return error(res, check.reason, 400);
+
     const worker = await Worker.findOne({ where: { phone } });
-    if (!worker || worker.is_blocked) return error(res, 'Account blocked or not found', 403);
-    const token = jwt.sign({ id: worker.id, role: 'worker' }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
-    return success(res, { token, worker: { id: worker.id, name: worker.name, phone: worker.phone, email: worker.email } }, 'Login successful');
+    if (!worker) return error(res, 'Worker not found', 404);
+    if (worker.is_blocked) return error(res, 'Your account is blocked. Contact admin.', 403);
+
+    // Update FCM token if provided
+    if (fcm_token) await worker.update({ fcm_token });
+
+    const token = jwt.sign(
+      { id: worker.id, role: 'worker' },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
+
+    // is_new = true only if worker was just created (within last 5 minutes during send-otp)
+    const createdAt = new Date(worker.createdAt || worker.created_at);
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const isNew = createdAt > fiveMinAgo && worker.name === 'Worker';
+
+    return success(res, {
+      token,
+      worker: {
+        id: worker.id,
+        name: worker.name,
+        phone: worker.phone,
+        email: worker.email,
+        profile_image: worker.profile_image,
+        status: worker.status,
+        is_new: isNew,
+      },
+    }, 'Login successful');
   } catch (err) {
     return error(res, err.message);
   }
