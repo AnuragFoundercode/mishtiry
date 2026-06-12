@@ -4,7 +4,6 @@ const Zone = require('../../models/zone.model');
 const Worker = require('../../models/worker.model');
 const User = require('../../models/user.model');
 const Address = require('../../models/address.model');
-const Slot = require('../../models/slot.model');
 const Coupon = require('../../models/coupon.model');
 const Notification = require('../../models/notification.model');
 const { success, error } = require('../../helpers/response.helper');
@@ -98,21 +97,13 @@ const previewCharges = async (req, res) => {
 // Online → booking created, Cashfree order created, payment_session_id returned
 const createBooking = async (req, res) => {
   try {
-    const { service_id, booking_date, notes, address_id, payment_method, slot_id, coupon_code } = req.body;
+    const { service_id, booking_date, notes, address_id, payment_method, coupon_code } = req.body;
 
-    if (!service_id || !booking_date) return error(res, 'service_id and booking_date are required', 400);
+    if (!service_id) return error(res, 'service_id is required', 400);
     if (!address_id) return error(res, 'address_id is required', 400);
 
-    // Validate slot if provided
-    let slot = null;
-    if (slot_id) {
-      slot = await Slot.findByPk(slot_id);
-      if (!slot) return error(res, 'Slot not found', 404);
-      if (!slot.is_active) return error(res, 'This slot is not available', 400);
-      // Check capacity
-      const currentCount = await Booking.count({ where: { slot_id } });
-      if (currentCount >= slot.max_bookings) return error(res, 'This slot is fully booked', 400);
-    }
+    // Auto-set booking_date to now if not provided
+    const finalBookingDate = booking_date ? new Date(booking_date) : new Date();
 
     // Fetch the saved address
     const address = await Address.findOne({ where: { id: address_id, user_id: req.user.id } });
@@ -152,15 +143,18 @@ const createBooking = async (req, res) => {
     const charges = await calculateBookingCharges(effectivePrice, couponDiscount);
     const isCod = payment_method === 'cod';
 
+    // Generate 4-digit confirmation OTP for service completion
+    const confirmationOtp = String(Math.floor(1000 + Math.random() * 9000));
+
     const booking = await Booking.create({
       user_id: req.user.id,
       service_id,
-      booking_date,
+      booking_date: finalBookingDate,
       notes: notes || null,
       address_id: address.id,
       address: address.full_address,
       zone_id: matchedZone ? matchedZone.id : null,
-      slot_id: slot_id || null,
+      confirmation_otp: confirmationOtp,
       coupon_id: appliedCoupon ? appliedCoupon.id : null,
       coupon_code: appliedCoupon ? appliedCoupon.code : null,
       coupon_discount: couponDiscount,
@@ -280,7 +274,6 @@ const getMyBookings = async (req, res) => {
         { model: Service, include: [{ model: require('../../models/category.model'), attributes: ['id', 'name'] }] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
         { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'latitude', 'longitude', 'city', 'pincode'], required: false },
-        { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
         { model: Coupon, attributes: ['id', 'code', 'title', 'discount_type', 'discount_value'], required: false },
       ],
       order: [['created_at', 'DESC']],
@@ -298,7 +291,6 @@ const getBookingDetail = async (req, res) => {
         { model: Service, include: [{ model: require('../../models/category.model'), attributes: ['id', 'name'] }] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
         { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'latitude', 'longitude', 'city', 'pincode'], required: false },
-        { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
         { model: Coupon, attributes: ['id', 'code', 'title', 'discount_type', 'discount_value'], required: false },
       ],
     });

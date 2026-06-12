@@ -49,22 +49,28 @@
       </div>
       <div class="card-body">
         <div class="d-flex gap-3">
-          <% if(booking.Service && booking.Service.images && booking.Service.images.length){ %>
-            <img src="/uploads/<%= booking.Service.images[0] %>" class="rounded" style="width:80px;height:80px;object-fit:cover;" alt="Service"/>
+          <% 
+            let serviceImages = [];
+            if(booking.Service && booking.Service.images) {
+              serviceImages = Array.isArray(booking.Service.images) ? booking.Service.images : (typeof booking.Service.images === 'string' ? JSON.parse(booking.Service.images || '[]') : []);
+            }
+          %>
+          <% if(serviceImages.length){ %>
+            <img src="/uploads/<%= serviceImages[0] %>" class="rounded" style="width:80px;height:80px;object-fit:cover;" alt="Service"/>
           <% } else { %>
             <div class="bg-primary bg-opacity-10 rounded d-flex align-items-center justify-content-center" style="width:80px;height:80px;">
               <i class="bi bi-tools text-primary" style="font-size:1.8rem;"></i>
             </div>
           <% } %>
           <div class="flex-grow-1">
-            <h6 class="fw-bold mb-1"><%= booking.Service?.name || '—' %></h6>
-            <% if(booking.Service?.Category){ %>
+            <h6 class="fw-bold mb-1"><%= (booking.Service && booking.Service.name) ? booking.Service.name : '—' %></h6>
+            <% if(booking.Service && booking.Service.Category){ %>
               <span class="badge bg-primary bg-opacity-10 text-primary mb-2"><%= booking.Service.Category.name %></span>
             <% } %>
-            <% if(booking.Service?.description){ %>
+            <% if(booking.Service && booking.Service.description){ %>
               <p class="text-muted small mb-1"><%= booking.Service.description %></p>
             <% } %>
-            <% if(booking.Service?.estimated_time){ %>
+            <% if(booking.Service && booking.Service.estimated_time){ %>
               <small class="text-muted"><i class="bi bi-clock me-1"></i>Est. Time: <%= booking.Service.estimated_time %></small>
             <% } %>
           </div>
@@ -96,20 +102,16 @@
             </div>
           </div>
 
-          <!-- Time Slot -->
+          <!-- Confirmation OTP -->
           <div class="col-sm-6">
             <div class="d-flex align-items-start gap-3">
               <div class="bg-success bg-opacity-10 rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;">
-                <i class="bi bi-clock text-success"></i>
+                <i class="bi bi-key text-success"></i>
               </div>
               <div>
-                <p class="text-muted small mb-0">Time Slot</p>
-                <% if(booking.Slot){ %>
-                  <p class="fw-semibold mb-0"><%= booking.Slot.start_time %> – <%= booking.Slot.end_time %></p>
-                  <small class="text-muted"><%= new Date(booking.Slot.date).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) %></small>
-                <% } else { %>
-                  <p class="fw-semibold mb-0 text-muted">Not selected</p>
-                <% } %>
+                <p class="text-muted small mb-0">Confirmation OTP</p>
+                <p class="fw-bold mb-0" style="font-size:1.2rem;letter-spacing:3px;"><%= booking.confirmation_otp || '—' %></p>
+                <small class="text-muted">Worker needs this to complete</small>
               </div>
             </div>
           </div>
@@ -240,19 +242,19 @@
       <div class="card-body">
         <div class="d-flex align-items-center gap-3 mb-3">
           <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-            <span class="fw-bold text-primary" style="font-size:1.1rem;"><%= (booking.User?.name || 'U')[0].toUpperCase() %></span>
+            <span class="fw-bold text-primary" style="font-size:1.1rem;"><%= (booking.User && booking.User.name) ? booking.User.name[0].toUpperCase() : 'U' %></span>
           </div>
           <div>
-            <p class="fw-semibold mb-0"><%= booking.User?.name || '—' %></p>
+            <p class="fw-semibold mb-0"><%= (booking.User && booking.User.name) ? booking.User.name : '—' %></p>
             <small class="text-muted">Customer</small>
           </div>
         </div>
         <div class="d-flex flex-column gap-2">
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-phone text-muted"></i>
-            <span class="small"><%= booking.User?.mobile || '—' %></span>
+            <span class="small"><%= (booking.User && booking.User.mobile) ? booking.User.mobile : '—' %></span>
           </div>
-          <% if(booking.User?.email){ %>
+          <% if(booking.User && booking.User.email){ %>
           <div class="d-flex align-items-center gap-2">
             <i class="bi bi-envelope text-muted"></i>
             <span class="small"><%= booking.User.email %></span>
@@ -262,12 +264,12 @@
       </div>
     </div>
 
-    <!-- Worker Assignment -->
+    <!-- Worker Info -->
     <div class="card mb-4">
       <div class="card-header"><i class="bi bi-person-badge-fill me-2 text-warning"></i>Assigned Worker</div>
       <div class="card-body">
         <% if(booking.Worker){ %>
-          <div class="d-flex align-items-center gap-3 mb-3">
+          <div class="d-flex align-items-center gap-3">
             <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:44px;height:44px;">
               <i class="bi bi-person-check-fill text-success"></i>
             </div>
@@ -276,27 +278,14 @@
               <small class="text-muted"><i class="bi bi-phone me-1"></i><%= booking.Worker.phone %></small>
             </div>
           </div>
-          <a href="/admin/workers/<%= booking.Worker.id %>" class="btn btn-sm btn-outline-primary w-100">
+          <a href="/admin/workers/<%= booking.Worker.id %>" class="btn btn-sm btn-outline-primary w-100 mt-3">
             <i class="bi bi-eye me-1"></i>View Worker Profile
           </a>
         <% } else { %>
-          <div class="text-center py-2 mb-3">
-            <i class="bi bi-person-x text-muted" style="font-size:1.5rem;"></i>
-            <p class="text-muted small mt-1 mb-0">No worker assigned</p>
+          <div class="text-center py-3">
+            <i class="bi bi-hourglass-split text-warning" style="font-size:1.5rem;"></i>
+            <p class="text-muted small mt-2 mb-0">Waiting for worker to accept</p>
           </div>
-        <% } %>
-        <% if(booking.status !== 'completed' && booking.status !== 'cancelled'){ %>
-          <form method="POST" action="/admin/bookings/<%= booking.id %>/assign-worker" class="mt-2">
-            <div class="input-group input-group-sm">
-              <select name="worker_id" class="form-select" required>
-                <option value="">— Select Worker —</option>
-                <% availableWorkers.forEach(w => { %>
-                  <option value="<%= w.id %>" <%= booking.worker_id == w.id ? 'selected' : '' %>><%= w.name %> (<%= w.phone %>)</option>
-                <% }) %>
-              </select>
-              <button class="btn btn-warning" type="submit"><i class="bi bi-check-lg"></i></button>
-            </div>
-          </form>
         <% } %>
       </div>
     </div>

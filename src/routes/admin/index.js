@@ -1,6 +1,5 @@
 const router = require('express').Router();
 const adminCtrl = require('../../controllers/admin/admin.controller');
-const slotCtrl = require('../../controllers/admin/slot.controller');
 const couponCtrl = require('../../controllers/admin/coupon.controller');
 const { authenticate, authorize } = require('../../middlewares/auth.middleware');
 
@@ -36,12 +35,6 @@ router.get('/zones', adminCtrl.getZones);
 router.post('/zones', adminCtrl.createZone);
 router.put('/zones/:id', adminCtrl.updateZone);
 router.delete('/zones/:id', adminCtrl.deleteZone);
-
-// Slots
-router.get('/slots', slotCtrl.getSlots);
-router.post('/slots', slotCtrl.createSlot);
-router.put('/slots/:id', slotCtrl.updateSlot);
-router.delete('/slots/:id', slotCtrl.deleteSlot);
 
 // Coupons
 router.get('/coupons', couponCtrl.getCoupons);

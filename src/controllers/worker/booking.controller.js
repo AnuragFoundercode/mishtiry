@@ -22,7 +22,7 @@ const setIo = (io) => { _io = io; };
 const getProfile = async (req, res) => {
   try {
     const worker = await Worker.findByPk(req.worker.id, {
-      attributes: ['id', 'name', 'phone', 'email', 'profile_image', 'zone_id', 'status', 'wallet', 'rating', 'rating_count', 'aadhaar_number', 'aadhaar_front', 'aadhaar_back', 'is_active', 'created_at'],
+      attributes: ['id', 'name', 'phone', 'email', 'profile_image', 'zone_id', 'status', 'wallet', 'rating', 'rating_count', 'availability', 'latitude', 'longitude', 'aadhaar_number', 'aadhaar_front', 'aadhaar_back', 'is_active', 'created_at'],
       include: [
         { model: Zone, attributes: ['id', 'name'], required: false },
         { model: Service, attributes: ['id', 'name', 'price'], through: { attributes: [] } },
@@ -255,14 +255,25 @@ const getBookingDetail = async (req, res) => {
  */
 const updateStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, otp } = req.body;
     const allowed = ['accepted', 'in_progress', 'completed'];
     if (!allowed.includes(status)) return error(res, 'Invalid status. Allowed: accepted, in_progress, completed', 400);
 
     const booking = await Booking.findOne({ where: { id: req.params.id, worker_id: req.worker.id } });
     if (!booking) return error(res, 'Booking not found', 404);
 
+    // For completion, require confirmation OTP from user
+    if (status === 'completed') {
+      if (!otp) return error(res, 'Confirmation OTP is required to complete booking', 400);
+      if (otp !== booking.confirmation_otp) return error(res, 'Invalid OTP. Ask the customer for the correct code.', 400);
+    }
+
     await booking.update({ status });
+
+    // Mark worker as online again after completing
+    if (status === 'completed') {
+      await Worker.update({ availability: 'online' }, { where: { id: req.worker.id } });
+    }
 
     await Notification.create({
       user_id: booking.user_id,

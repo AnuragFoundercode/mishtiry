@@ -11,7 +11,8 @@ const Booking = sequelize.define('Booking', {
   notes: { type: DataTypes.TEXT },
   address: { type: DataTypes.TEXT },
   address_id: { type: DataTypes.INTEGER, allowNull: true },
-  slot_id: { type: DataTypes.INTEGER, allowNull: true },
+  slot_id: { type: DataTypes.INTEGER, allowNull: true }, // deprecated - kept for old data
+  confirmation_otp: { type: DataTypes.STRING(4), allowNull: true },
   coupon_id: { type: DataTypes.INTEGER, allowNull: true },
   coupon_code: { type: DataTypes.STRING(50), allowNull: true },
   coupon_discount: { type: DataTypes.DECIMAL(10, 2), defaultValue: 0 },

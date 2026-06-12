@@ -87,12 +87,6 @@ router.post('/sliders', guard, upload.single('image'), sliderCtrl.createSlider);
 router.post('/sliders/:id/update', guard, upload.single('image'), sliderCtrl.updateSlider);
 router.post('/sliders/:id/delete', guard, sliderCtrl.deleteSlider);
 
-// Slots
-router.get('/slots', guard, ctrl.slots);
-router.post('/slots', guard, ctrl.createSlotWeb);
-router.post('/slots/:id/update', guard, ctrl.updateSlotWeb);
-router.post('/slots/:id/delete', guard, ctrl.deleteSlotWeb);
-
 // Coupons
 router.get('/coupons', guard, ctrl.coupons);
 router.get('/coupons/:id', guard, ctrl.couponDetail);

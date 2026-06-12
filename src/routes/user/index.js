@@ -26,9 +26,6 @@ router.get('/services/:id',  userCtrl.getServiceDetail);
 // Sliders
 router.get('/sliders',  sliderCtrl.getSliders);
 
-// Slots
-router.get('/slots', ...auth, userCtrl.getAvailableSlots);
-
 // Addresses
 router.get('/addresses', ...auth, addressCtrl.getAddresses);
 router.post('/addresses', ...auth, addressCtrl.createAddress);

@@ -50,9 +50,9 @@ Address.belongsTo(User, { foreignKey: 'user_id' });
 Booking.belongsTo(Address, { foreignKey: 'address_id' });
 Address.hasMany(Booking, { foreignKey: 'address_id' });
 
-// Slot
-Slot.hasMany(Booking, { foreignKey: 'slot_id' });
-Booking.belongsTo(Slot, { foreignKey: 'slot_id' });
+// Slot (deprecated - kept for backward compatibility)
+// Slot.hasMany(Booking, { foreignKey: 'slot_id' });
+// Booking.belongsTo(Slot, { foreignKey: 'slot_id' });
 
 // Coupon
 Coupon.belongsTo(Category, { foreignKey: 'category_id' });

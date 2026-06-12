@@ -2,7 +2,6 @@ const User = require('../../models/user.model');
 const Category = require('../../models/category.model');
 const Service = require('../../models/service.model');
 const Booking = require('../../models/booking.model');
-const Slot = require('../../models/slot.model');
 const Policy = require('../../models/policy.model');
 const AppSetting = require('../../models/app_setting.model');
 const Testimonial = require('../../models/testimonial.model');
@@ -213,4 +212,4 @@ const getTestimonials = async (req, res) => {
   } catch (e) { return error(res, e.message); }
 };
 
-module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getAvailableSlots, getPolicies, getPolicyBySlug, getSupport, getTestimonials };
+module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getPolicies, getPolicyBySlug, getSupport, getTestimonials };

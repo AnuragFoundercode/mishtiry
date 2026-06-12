@@ -2,7 +2,7 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const {
   User, Booking, Category, Service, Notification,
-  Policy, Zone, Worker, Slot, Coupon, CouponUsage,
+  Policy, Zone, Worker, Coupon, CouponUsage,
 } = require('../../models/index');
 const PlatformSetting = require('../../models/platform_setting.model');
 const AppSetting = require('../../models/app_setting.model');
@@ -352,7 +352,6 @@ const bookingDetail = async (req, res) => {
         { model: User, attributes: ['name', 'mobile', 'email'] },
         { model: Service, attributes: ['name', 'description', 'estimated_time', 'price', 'images'], include: [{ model: Category, attributes: ['id', 'name'], required: false }] },
         { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
-        { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
         { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'city', 'state', 'pincode'], required: false },
         { model: Coupon, attributes: ['id', 'code', 'title', 'discount_type', 'discount_value'], required: false },
       ],
@@ -403,7 +402,6 @@ const bookings = async (req, res) => {
       include: [
         { model: User, attributes: ['name', 'mobile'], ...(userWhere && { where: userWhere, required: true }) },
         { model: Service, attributes: ['name'] },
-        { model: Slot, attributes: ['id', 'date', 'start_time', 'end_time'], required: false },
       ],
     });
     res.render('admin/bookings', { title: 'Bookings', page: 'bookings', bookings: rows, total: count, currentPage: +page, pages: Math.ceil(count / limit), status, search, adminName: req.session.adminName, success: req.flash('success') });
@@ -1104,7 +1102,6 @@ module.exports = {
   policies, createPolicy, updatePolicy, deletePolicy,
   zones, createZone, updateZone, deleteZone,
   workers, createWorker, workerDetail, toggleBlockWorker, updateWorkerStatus, updateWorkerZone, updateWorkerServices, updateWorkerProfile, assignWorker,
-  slots, createSlotWeb, updateSlotWeb, deleteSlotWeb,
   coupons, createCouponWeb, updateCouponWeb, deleteCouponWeb, toggleCouponWeb, couponDetail,
   appSettings, updateAppSettings,
   testimonials, createTestimonial, updateTestimonial, deleteTestimonial,
