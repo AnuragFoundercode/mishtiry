@@ -127,9 +127,9 @@ const initSocket = (io) => {
       if (role === 'worker') {
         connectedWorkers.delete(userId);
         // Mark worker offline on disconnect
-        await Worker.update({ availability: 'offline' }, { where: { id: userId } });
-        await WorkerAvailabilityLog.create({ worker_id: userId, status: 'offline' });
-        console.log(`Worker ${userId} disconnected → offline`);
+        //await Worker.update({ availability: 'offline' }, { where: { id: userId } });
+        //await WorkerAvailabilityLog.create({ worker_id: userId, status: 'offline' });
+        //console.log(`Worker ${userId} disconnected → offline`);
       } else {
         connectedUsers.delete(userId);
         console.log(`User ${userId} disconnected`);
