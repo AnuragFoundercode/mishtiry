@@ -45,6 +45,12 @@ router.post('/bookings/:id/cancel', ...auth, bookingCtrl.cancelBooking);
 router.get('/coupons', ...auth, bookingCtrl.listCoupons);
 router.post('/coupons/validate', ...auth, bookingCtrl.applyCoupon);
 
+// Notifications
+router.get('/notifications', ...auth, userCtrl.getNotifications);
+router.patch('/notifications/:id/read', ...auth, userCtrl.markNotificationRead);
+router.patch('/notifications/read-all', ...auth, userCtrl.markAllNotificationsRead);
+router.delete('/notifications/:id', ...auth, userCtrl.deleteNotification);
+
 // Policies (public - no auth needed)
 router.get('/policies', userCtrl.getPolicies);
 router.get('/policies/:slug', userCtrl.getPolicyBySlug);

@@ -358,6 +358,15 @@
               <td class="text-end pe-3 fw-bold text-success">-₹<%= parseFloat(booking.coupon_discount).toFixed(2) %></td>
             </tr>
             <% } %>
+            <% if(booking.BookingAddons && booking.BookingAddons.length){ %>
+            <tr><td colspan="2" class="ps-3 pt-2"><small class="text-muted fw-semibold"><i class="bi bi-plus-circle me-1"></i>Add-ons (by Worker)</small></td></tr>
+            <% booking.BookingAddons.forEach(a => { %>
+            <tr class="table-warning">
+              <td class="ps-4 small"><%= a.name %></td>
+              <td class="text-end pe-3 fw-medium">+₹<%= parseFloat(a.price).toFixed(2) %></td>
+            </tr>
+            <% }) %>
+            <% } %>
             <tr>
               <td class="text-muted ps-3">Platform Charge</td>
               <td class="text-end pe-3">₹<%= parseFloat(booking.platform_charge||0).toFixed(2) %></td>

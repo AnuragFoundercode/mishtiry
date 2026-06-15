@@ -5,6 +5,7 @@ const Booking = require('../../models/booking.model');
 const Policy = require('../../models/policy.model');
 const AppSetting = require('../../models/app_setting.model');
 const Testimonial = require('../../models/testimonial.model');
+const Notification = require('../../models/notification.model');
 const sequelize = require('../../config/database');
 const { success, error } = require('../../helpers/response.helper');
 
@@ -212,4 +213,45 @@ const getTestimonials = async (req, res) => {
   } catch (e) { return error(res, e.message); }
 };
 
-module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getPolicies, getPolicyBySlug, getSupport, getTestimonials };
+// GET /api/user/notifications
+const getNotifications = async (req, res) => {
+  try {
+    const notifications = await Notification.findAll({
+      where: { user_id: req.user.id },
+      order: [['created_at', 'DESC']],
+      limit: 50,
+    });
+    const unreadCount = await Notification.count({ where: { user_id: req.user.id, is_read: false } });
+    return success(res, { notifications, unread_count: unreadCount });
+  } catch (e) { return error(res, e.message); }
+};
+
+// PATCH /api/user/notifications/:id/read
+const markNotificationRead = async (req, res) => {
+  try {
+    const notification = await Notification.findOne({ where: { id: req.params.id, user_id: req.user.id } });
+    if (!notification) return error(res, 'Notification not found', 404);
+    await notification.update({ is_read: true });
+    return success(res, {}, 'Marked as read');
+  } catch (e) { return error(res, e.message); }
+};
+
+// PATCH /api/user/notifications/read-all
+const markAllNotificationsRead = async (req, res) => {
+  try {
+    await Notification.update({ is_read: true }, { where: { user_id: req.user.id, is_read: false } });
+    return success(res, {}, 'All marked as read');
+  } catch (e) { return error(res, e.message); }
+};
+
+// DELETE /api/user/notifications/:id
+const deleteNotification = async (req, res) => {
+  try {
+    const notification = await Notification.findOne({ where: { id: req.params.id, user_id: req.user.id } });
+    if (!notification) return error(res, 'Notification not found', 404);
+    await notification.destroy();
+    return success(res, {}, 'Notification deleted');
+  } catch (e) { return error(res, e.message); }
+};
+
+module.exports = { updateProfile, getProfile, getCategories, getServicesByCategory, getServiceDetail, getPopularServices, getPolicies, getPolicyBySlug, getSupport, getTestimonials, getNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification };

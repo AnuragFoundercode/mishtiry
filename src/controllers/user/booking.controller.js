@@ -13,6 +13,8 @@ const { validateCoupon, recordCouponUsage, getAvailableCoupons } = require('../.
 const { findZoneByCoordinates } = require('../../helpers/zone.helper');
 const { createCashfreeOrder, verifyCashfreePayment } = require('../../helpers/cashfree.helper');
 
+const getBookingAddonModel = () => require('../../models/booking_addon.model');
+
 let _io;
 const setIo = (io) => { _io = io; };
 
@@ -285,6 +287,7 @@ const getMyBookings = async (req, res) => {
 // ─── GET /api/user/bookings/:id ───────────────────────────────────────────────
 const getBookingDetail = async (req, res) => {
   try {
+    const { BookingAddon } = require('../../models/index');
     const booking = await Booking.findOne({
       where: { id: req.params.id, user_id: req.user.id },
       include: [
@@ -295,7 +298,16 @@ const getBookingDetail = async (req, res) => {
       ],
     });
     if (!booking) return error(res, 'Booking not found', 404);
-    return success(res, { booking });
+
+    const addons = await getBookingAddonModel().findAll({
+      where: { booking_id: booking.id },
+      attributes: ['id', 'name', 'price', 'status', 'created_at'],
+      order: [['created_at', 'ASC']],
+    });
+    const result = booking.toJSON();
+    result.addons = addons;
+
+    return success(res, { booking: result });
   } catch (err) { return error(res, err.message); }
 };
 

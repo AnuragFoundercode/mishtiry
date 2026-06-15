@@ -7,6 +7,7 @@ const {
 const PlatformSetting = require('../../models/platform_setting.model');
 const AppSetting = require('../../models/app_setting.model');
 const Testimonial = require('../../models/testimonial.model');
+const getBookingAddonModel = () => require('../../models/booking_addon.model');
 const { sendEmailNotification } = require('../../helpers/notification.helper');
 const { getSettings } = require('../../helpers/pricing.helper');
 const { Op } = require('sequelize');
@@ -357,6 +358,14 @@ const bookingDetail = async (req, res) => {
       ],
     });
     if (!booking) { req.flash('error', 'Booking not found'); return res.redirect('/admin/bookings'); }
+
+    // Fetch addons separately
+    const addons = await getBookingAddonModel().findAll({
+      where: { booking_id: booking.id },
+      attributes: ['id', 'name', 'price', 'status', 'created_at'],
+      order: [['created_at', 'ASC']],
+    });
+    booking.dataValues.BookingAddons = addons;
     const messages = await Message.findAll({
       where: { booking_id: booking.id },
       order: [['created_at', 'ASC']],

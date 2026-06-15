@@ -22,6 +22,14 @@ router.get('/availability', authenticateWorker, workerCtrl.getAvailability);
 router.patch('/availability', authenticateWorker, workerCtrl.updateAvailability);
 router.patch('/location', authenticateWorker, workerCtrl.updateLocation);
 
+// Bank Details
+router.get('/bank-details', authenticateWorker, workerCtrl.getBankDetails);
+router.put('/bank-details', authenticateWorker, workerCtrl.updateBankDetails);
+
+// Dashboard / Stats
+router.get('/dashboard/today', authenticateWorker, workerCtrl.getTodayOverview);
+router.get('/dashboard/stats', authenticateWorker, workerCtrl.getOverallStats);
+
 // Zones
 router.get('/zones', authenticateWorker, workerCtrl.getZones);
 router.put('/zone', authenticateWorker, workerCtrl.updateZone);
@@ -37,6 +45,8 @@ router.get('/bookings', authenticateWorker, workerCtrl.getMyBookings);
 router.get('/bookings/:id', authenticateWorker, workerCtrl.getBookingDetail);
 router.patch('/bookings/:id/status', authenticateWorker, workerCtrl.updateStatus);
 router.post('/bookings/:id/collect-cod', authenticateWorker, workerCtrl.collectCod);
+router.post('/bookings/:id/addons', authenticateWorker, workerCtrl.addBookingAddon);
+router.get('/bookings/:id/addons', authenticateWorker, workerCtrl.getBookingAddons);
 
 // Notifications
 router.get('/notifications', authenticateWorker, workerCtrl.getNotifications);

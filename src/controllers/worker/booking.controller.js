@@ -10,6 +10,12 @@ const Notification = require('../../models/notification.model');
 const { success, error } = require('../../helpers/response.helper');
 const { emitToUser } = require('../../sockets/socket.handler');
 
+// Lazy load to avoid circular dependency — associations must be registered first
+const getBookingAddonModel = () => {
+  const model = require('../../models/booking_addon.model');
+  return model;
+};
+
 let _io;
 const setIo = (io) => { _io = io; };
 
@@ -243,7 +249,19 @@ const getBookingDetail = async (req, res) => {
       ],
     });
     if (!booking) return error(res, 'Booking not found', 404);
-    return success(res, { booking });
+    
+    // Fetch addons separately to avoid association issues
+    const BookingAddonModel = require('../../models/booking_addon.model');
+    const addons = await BookingAddonModel.findAll({
+      where: { booking_id: booking.id },
+      attributes: ['id', 'name', 'price', 'status', 'created_at'],
+      order: [['created_at', 'ASC']],
+    });
+
+    const result = booking.toJSON();
+    result.addons = addons;
+
+    return success(res, { booking: result });
   } catch (err) {
     return error(res, err.message);
   }
@@ -270,9 +288,35 @@ const updateStatus = async (req, res) => {
 
     await booking.update({ status });
 
-    // Mark worker as online again after completing
+    // Handle payment and earnings on completion
     if (status === 'completed') {
       await Worker.update({ availability: 'online' }, { where: { id: req.worker.id } });
+
+      const totalAmount = parseFloat(booking.total_amount || 0);
+      const platformCharge = parseFloat(booking.platform_charge || 0);
+      const gstAmount = parseFloat(booking.gst_amount || 0);
+      const workerEarning = totalAmount - platformCharge - gstAmount;
+
+      if (booking.payment_method === 'cod') {
+        // COD: Worker already has cash. They owe admin the platform fee.
+        const dueAmount = parseFloat((platformCharge + gstAmount).toFixed(2));
+        await booking.update({
+          payment_status: 'paid',
+          cod_collected: totalAmount,
+          admin_due: dueAmount,
+        });
+        // Add to worker's total admin_due in DB
+        const currentWorker = await Worker.findByPk(req.worker.id);
+        await Worker.update(
+          { admin_due: parseFloat((parseFloat(currentWorker.admin_due || 0) + dueAmount).toFixed(2)) },
+          { where: { id: req.worker.id } }
+        );
+      } else {
+        // Online: Admin has all money. Credit worker's wallet with their share.
+        const worker = await Worker.findByPk(req.worker.id);
+        const newWallet = parseFloat(worker.wallet || 0) + workerEarning;
+        await Worker.update({ wallet: parseFloat(newWallet.toFixed(2)) }, { where: { id: req.worker.id } });
+      }
     }
 
     await Notification.create({
@@ -318,6 +362,87 @@ const collectCod = async (req, res) => {
       cod_collected: amount_collected,
       admin_due,
     }, 'COD collected');
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+// ─── BOOKING ADD-ONS ──────────────────────────────────────────────────────────
+
+/**
+ * POST /api/worker/bookings/:id/addons
+ * Worker adds extra item/service to a booking — directly accepted, no user approval needed
+ * Body: { name, price } or { items: [{ name, price }, ...] }
+ */
+const addBookingAddon = async (req, res) => {
+  try {
+
+    const booking = await Booking.findOne({ where: { id: req.params.id, worker_id: req.worker.id } });
+    if (!booking) return error(res, 'Booking not found', 404);
+    if (booking.status === 'completed' || booking.status === 'cancelled') {
+      return error(res, 'Cannot add items to completed/cancelled booking', 400);
+    }
+
+    const { name, price, items } = req.body;
+    let addons = [];
+
+    if (items && Array.isArray(items)) {
+      addons = items.map(item => ({
+        booking_id: booking.id,
+        name: item.name,
+        price: parseFloat(item.price),
+        added_by_worker_id: req.worker.id,
+        status: 'accepted',
+      }));
+    } else if (name && price) {
+      addons = [{
+        booking_id: booking.id,
+        name,
+        price: parseFloat(price),
+        added_by_worker_id: req.worker.id,
+        status: 'accepted',
+      }];
+    } else {
+      return error(res, 'name and price required (or items array)', 400);
+    }
+
+    const created = await getBookingAddonModel().bulkCreate(addons);
+
+    // Update booking total with addon amount
+    const allAddons = await getBookingAddonModel().findAll({
+      where: { booking_id: booking.id, status: 'accepted' },
+    });
+    const addonTotal = allAddons.reduce((sum, a) => sum + parseFloat(a.price || 0), 0);
+    
+    // Recalculate: original total (without old addons) + new addon total
+    const baseTotal = parseFloat(booking.total_amount || 0) - parseFloat(booking.addon_total || 0);
+    const newTotal = baseTotal + addonTotal;
+
+    await booking.update({ addon_total: parseFloat(addonTotal.toFixed(2)), total_amount: parseFloat(newTotal.toFixed(2)) });
+    await booking.reload();
+
+    return success(res, {
+      addons: created,
+      addon_total: parseFloat(addonTotal.toFixed(2)),
+      new_total_amount: parseFloat(booking.total_amount),
+    }, 'Add-on added to booking');
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+/**
+ * GET /api/worker/bookings/:id/addons
+ * List all add-ons for a booking
+ */
+const getBookingAddons = async (req, res) => {
+  try {
+    const addons = await getBookingAddonModel().findAll({
+      where: { booking_id: req.params.id },
+      order: [['created_at', 'ASC']],
+    });
+    const total = addons.reduce((sum, a) => sum + parseFloat(a.price), 0);
+    return success(res, { addons, addon_total: parseFloat(total.toFixed(2)) });
   } catch (err) {
     return error(res, err.message);
   }
@@ -469,6 +594,142 @@ const getAvailability = async (req, res) => {
   }
 };
 
+// ─── DASHBOARD / STATS ────────────────────────────────────────────────────────
+
+/**
+ * GET /api/worker/dashboard/today
+ */
+const getTodayOverview = async (req, res) => {
+  try {
+    const { Op } = require('sequelize');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayCompleted = await Booking.findAll({
+      where: {
+        worker_id: req.worker.id,
+        status: 'completed',
+        payment_status: 'paid',
+        updated_at: { [Op.gte]: today, [Op.lt]: tomorrow },
+      },
+    });
+
+    const todayEarning = todayCompleted.reduce((sum, b) => sum + parseFloat(b.total_amount || 0), 0);
+    const worker = await Worker.findByPk(req.worker.id, { attributes: ['rating', 'rating_count'] });
+
+    return success(res, {
+      today: {
+        earning: parseFloat(todayEarning.toFixed(2)),
+        jobs_done: todayCompleted.length,
+        rating: parseFloat(worker.rating || 0),
+        rating_count: worker.rating_count || 0,
+      },
+    });
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+/**
+ * GET /api/worker/dashboard/stats
+ */
+const getOverallStats = async (req, res) => {
+  try {
+    const allBookings = await Booking.findAll({
+      where: { worker_id: req.worker.id },
+      attributes: ['id', 'status', 'payment_method', 'payment_status', 'total_amount', 'cod_collected', 'admin_due', 'platform_charge', 'gst_amount'],
+    });
+
+    const completedPaid = allBookings.filter(b => b.status === 'completed' && b.payment_status === 'paid');
+    const totalEarning = completedPaid.reduce((sum, b) => sum + parseFloat(b.total_amount || 0), 0);
+    const cashCollected = completedPaid.filter(b => b.payment_method === 'cod').reduce((sum, b) => sum + parseFloat(b.cod_collected || 0), 0);
+    const onlinePaid = completedPaid.filter(b => b.payment_method === 'online').reduce((sum, b) => sum + parseFloat(b.total_amount || 0), 0);
+
+    // Admin due = total platform fees worker owes from COD bookings
+    const totalAdminDue = completedPaid
+      .filter(b => b.payment_method === 'cod')
+      .reduce((sum, b) => sum + parseFloat(b.admin_due || 0), 0);
+
+    // Worker's net earning = total - platform - gst
+    const totalPlatformFees = completedPaid.reduce((sum, b) => sum + parseFloat(b.platform_charge || 0) + parseFloat(b.gst_amount || 0), 0);
+    const netEarning = totalEarning - totalPlatformFees;
+
+    const totalAssigned = allBookings.length;
+    const jobsCompleted = allBookings.filter(b => b.status === 'completed').length;
+    const inProgress = allBookings.filter(b => b.status === 'in_progress' || b.status === 'accepted').length;
+    const cancelled = allBookings.filter(b => b.status === 'cancelled').length;
+
+    const accepted = allBookings.filter(b => ['accepted', 'in_progress', 'completed'].includes(b.status)).length;
+    const acceptanceRate = totalAssigned > 0 ? parseFloat(((accepted / totalAssigned) * 100).toFixed(1)) : 0;
+
+    const worker = await Worker.findByPk(req.worker.id, { attributes: ['rating', 'rating_count', 'wallet', 'admin_due'] });
+
+    return success(res, {
+      stats: {
+        total_earning: parseFloat(totalEarning.toFixed(2)),
+        net_earning: parseFloat(netEarning.toFixed(2)),
+        cash_collected: parseFloat(cashCollected.toFixed(2)),
+        online_paid: parseFloat(onlinePaid.toFixed(2)),
+        admin_due: parseFloat(worker.admin_due || 0),
+        platform_fees: parseFloat(totalPlatformFees.toFixed(2)),
+        wallet: parseFloat(worker.wallet || 0),
+        total_assigned: totalAssigned,
+        jobs_completed: jobsCompleted,
+        in_progress: inProgress,
+        cancelled: cancelled,
+        rating: parseFloat(worker.rating || 0),
+        rating_count: worker.rating_count || 0,
+        acceptance_rate: acceptanceRate,
+      },
+    });
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+// ─── BANK DETAILS ─────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/worker/bank-details
+ */
+const getBankDetails = async (req, res) => {
+  try {
+    const worker = await Worker.findByPk(req.worker.id, {
+      attributes: ['bank_name', 'holder_name', 'account_number', 'ifsc_code'],
+    });
+    return success(res, {
+      bank_name: worker.bank_name || null,
+      holder_name: worker.holder_name || null,
+      account_number: worker.account_number || null,
+      ifsc_code: worker.ifsc_code || null,
+    });
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+/**
+ * PUT /api/worker/bank-details
+ * Body: { bank_name, holder_name, account_number, ifsc_code }
+ */
+const updateBankDetails = async (req, res) => {
+  try {
+    const { bank_name, holder_name, account_number, ifsc_code } = req.body;
+    if (!bank_name || !holder_name || !account_number || !ifsc_code) {
+      return error(res, 'All fields required: bank_name, holder_name, account_number, ifsc_code', 400);
+    }
+    await Worker.update(
+      { bank_name, holder_name, account_number, ifsc_code },
+      { where: { id: req.worker.id } }
+    );
+    return success(res, { bank_name, holder_name, account_number, ifsc_code }, 'Bank details updated');
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
 /**
@@ -533,8 +794,11 @@ module.exports = {
   getZones, updateZone,
   getServicesList, getMyServices, updateMyServices,
   getMyBookings, getBookingDetail, updateStatus, collectCod,
+  addBookingAddon, getBookingAddons,
   updateFcmToken, getOngoingBooking,
   updateAvailability, updateLocation, getAvailability,
   getNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification,
+  getBankDetails, updateBankDetails,
+  getTodayOverview, getOverallStats,
   setIo,
 };
