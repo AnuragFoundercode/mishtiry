@@ -46,9 +46,15 @@ const userSendOtp = async (req, res) => {
     if (existing && existing.role === 'vendor') {
       return error(res, 'This number is registered as a vendor. Please use the vendor app.', 400);
     }
+    if (existing && existing.is_blocked) {
+      return error(res, 'Your account has been blocked. Contact support.', 403);
+    }
 
     await createAndSendOtp(mobile);
-    return success(res, {}, 'OTP sent successfully');
+    return success(res, {
+      is_registered: !!existing,
+      is_blocked: existing ? existing.is_blocked : false,
+    }, 'OTP sent successfully');
   } catch (err) {
     return error(res, err.message);
   }

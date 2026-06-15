@@ -153,10 +153,6 @@ const emitToWorker = (io, workerId, event, data) => {
  * and send them a new booking alert
  */
 const alertNearbyWorkers = async (io, booking, address, radiusKm = 5) => {
-  if (!address || !address.latitude || !address.longitude) return;
-
-  const lat = parseFloat(address.latitude);
-  const lng = parseFloat(address.longitude);
   const WorkerServiceModel = require('../models/worker_service.model');
 
   // Find workers who provide this service
@@ -167,37 +163,66 @@ const alertNearbyWorkers = async (io, booking, address, radiusKm = 5) => {
 
   if (!serviceWorkerIds.length) return;
 
-  // Haversine formula in SQL to find matching workers within radius
-  const workers = await Worker.findAll({
-    where: {
-      id: { [Op.in]: serviceWorkerIds },
-      availability: 'online',
-      status: 'approved',
-      is_active: true,
-      is_blocked: false,
-      latitude: { [Op.not]: null },
-      longitude: { [Op.not]: null },
-    },
-    attributes: {
-      include: [
-        [
-          sequelize.literal(`(
-            6371 * acos(
-              cos(radians(${lat})) * cos(radians(latitude)) *
-              cos(radians(longitude) - radians(${lng})) +
-              sin(radians(${lat})) * sin(radians(latitude))
-            )
-          )`),
-          'distance',
+  // Base conditions: approved, online, provides this service
+  const baseWhere = {
+    id: { [Op.in]: serviceWorkerIds },
+    availability: 'online',
+    status: 'approved',
+    is_active: true,
+    is_blocked: false,
+  };
+
+  let workers = [];
+
+  // Strategy 1: Find workers by ZONE match (if booking has a zone)
+  if (booking.zone_id) {
+    const zoneWorkers = await Worker.findAll({
+      where: { ...baseWhere, zone_id: booking.zone_id },
+    });
+    workers.push(...zoneWorkers);
+  }
+
+  // Strategy 2: Find workers by DISTANCE (within radius km)
+  if (address && address.latitude && address.longitude) {
+    const lat = parseFloat(address.latitude);
+    const lng = parseFloat(address.longitude);
+
+    const nearbyWorkers = await Worker.findAll({
+      where: {
+        ...baseWhere,
+        latitude: { [Op.not]: null },
+        longitude: { [Op.not]: null },
+      },
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              6371 * acos(
+                cos(radians(${lat})) * cos(radians(latitude)) *
+                cos(radians(longitude) - radians(${lng})) +
+                sin(radians(${lat})) * sin(radians(latitude))
+              )
+            )`),
+            'distance',
+          ],
         ],
-      ],
-    },
-    having: sequelize.where(
-      sequelize.literal(`distance`),
-      '<=',
-      radiusKm
-    ),
-    order: [[sequelize.literal('distance'), 'ASC']],
+      },
+      having: sequelize.where(
+        sequelize.literal(`distance`),
+        '<=',
+        radiusKm
+      ),
+      order: [[sequelize.literal('distance'), 'ASC']],
+    });
+    workers.push(...nearbyWorkers);
+  }
+
+  // Deduplicate workers (might appear in both zone + distance)
+  const seen = new Set();
+  workers = workers.filter(w => {
+    if (seen.has(w.id)) return false;
+    seen.add(w.id);
+    return true;
   });
 
   if (!workers.length) return;

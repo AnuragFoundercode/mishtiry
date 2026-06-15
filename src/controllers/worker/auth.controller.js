@@ -46,7 +46,12 @@ const sendOtp = async (req, res) => {
     if (worker.is_blocked) return error(res, 'Your account is blocked. Contact admin.', 403);
 
     await createAndSendOtp(phone);
-    return success(res, { is_new: isNew }, 'OTP sent successfully');
+    return success(res, {
+      is_new: isNew,
+      status: worker.status,
+      is_blocked: worker.is_blocked,
+      is_active: worker.is_active,
+    }, 'OTP sent successfully');
   } catch (err) {
     return error(res, err.message);
   }

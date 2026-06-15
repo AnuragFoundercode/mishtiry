@@ -631,16 +631,21 @@ const deleteZone = async (req, res) => {
 
 const workers = async (req, res) => {
   try {
-    const { search = '', page = 1 } = req.query;
+    const { search = '', page = 1, status } = req.query;
     const limit = 15, offset = (page - 1) * limit;
     const where = {};
     if (search) {
       const { Op } = require('sequelize');
       where[Op.or] = [{ name: { [Op.like]: `%${search}%` } }, { phone: { [Op.like]: `%${search}%` } }];
     }
+    if (status) where.status = status;
+
     const { count, rows } = await Worker.findAndCountAll({ where, limit, offset, order: [['created_at', 'DESC']] });
+    const isPending = status === 'pending';
     res.render('admin/workers', {
-      title: 'Workers', page: 'workers', workers: rows, total: count,
+      title: isPending ? 'Pending Approval' : 'Workers',
+      page: isPending ? 'pending-workers' : 'workers',
+      workers: rows, total: count,
       currentPage: +page, pages: Math.ceil(count / limit), search,
       adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error'),
     });
