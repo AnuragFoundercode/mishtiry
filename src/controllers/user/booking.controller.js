@@ -280,14 +280,28 @@ const getMyBookings = async (req, res) => {
       ],
       order: [['created_at', 'DESC']],
     });
-    return success(res, { bookings });
+
+    // Attach addons to each booking
+    const BookingAddonModel = require('../../models/booking_addon.model');
+    const bookingIds = bookings.map(b => b.id);
+    const allAddons = bookingIds.length ? await BookingAddonModel.findAll({
+      where: { booking_id: bookingIds },
+      attributes: ['id', 'booking_id', 'name', 'price', 'status', 'created_at'],
+    }) : [];
+
+    const results = bookings.map(b => {
+      const json = b.toJSON();
+      json.addons = allAddons.filter(a => a.booking_id === b.id);
+      return json;
+    });
+
+    return success(res, { bookings: results });
   } catch (err) { return error(res, err.message); }
 };
 
 // ─── GET /api/user/bookings/:id ───────────────────────────────────────────────
 const getBookingDetail = async (req, res) => {
   try {
-    const { BookingAddon } = require('../../models/index');
     const booking = await Booking.findOne({
       where: { id: req.params.id, user_id: req.user.id },
       include: [
@@ -299,7 +313,8 @@ const getBookingDetail = async (req, res) => {
     });
     if (!booking) return error(res, 'Booking not found', 404);
 
-    const addons = await getBookingAddonModel().findAll({
+    const BookingAddonModel = require('../../models/booking_addon.model');
+    const addons = await BookingAddonModel.findAll({
       where: { booking_id: booking.id },
       attributes: ['id', 'name', 'price', 'status', 'created_at'],
       order: [['created_at', 'ASC']],

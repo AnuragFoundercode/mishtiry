@@ -30,6 +30,9 @@ router.put('/bank-details', authenticateWorker, workerCtrl.updateBankDetails);
 router.get('/dashboard/today', authenticateWorker, workerCtrl.getTodayOverview);
 router.get('/dashboard/stats', authenticateWorker, workerCtrl.getOverallStats);
 
+// Onboarding Stepper
+router.get('/onboarding-status', authenticateWorker, workerCtrl.getOnboardingStatus);
+
 // Zones
 router.get('/zones', authenticateWorker, workerCtrl.getZones);
 router.put('/zone', authenticateWorker, workerCtrl.updateZone);

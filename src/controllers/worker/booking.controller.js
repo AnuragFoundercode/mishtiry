@@ -510,8 +510,6 @@ const getOngoingBooking = async (req, res) => {
       task_description: booking.notes || (booking.Service ? booking.Service.description : '') || 'No description',
       total_amount: parseFloat(booking.total_amount),
       address: booking.Address ? booking.Address.full_address : (booking.address || ''),
-      userLet: booking.Address.latitude,
-      userLng: booking.Address.longitude,
       pickup_address: booking.Address ? booking.Address.full_address : (booking.address || ''),
       distance: distanceStr,
       booking_date: booking.booking_date,
@@ -732,6 +730,41 @@ const updateBankDetails = async (req, res) => {
   }
 };
 
+// ─── STEPPER / ONBOARDING STATUS ──────────────────────────────────────────────
+
+/**
+ * GET /api/worker/onboarding-status
+ * Returns completion status of each step based on worker's phone/profile
+ */
+const getOnboardingStatus = async (req, res) => {
+  try {
+    const worker = await Worker.findByPk(req.worker.id, {
+      attributes: ['id', 'name', 'phone', 'profile_image', 'zone_id', 'aadhaar_number', 'aadhaar_front', 'aadhaar_back', 'bank_name', 'status'],
+    });
+
+    const workerServices = await WorkerService.count({ where: { worker_id: worker.id } });
+
+    const profileComplete = worker.name && worker.name !== 'Worker';
+    const zoneSelected = !!worker.zone_id;
+    const serviceSelected = workerServices > 0;
+    const aadhaarUploaded = !!(worker.aadhaar_number && worker.aadhaar_front && worker.aadhaar_back);
+    const bankAdded = !!(worker.bank_name);
+    const allComplete = profileComplete && zoneSelected && serviceSelected && aadhaarUploaded;
+
+    return success(res, {
+      profile_status: profileComplete,
+      zone_status: zoneSelected,
+      service_status: serviceSelected,
+      aadhaar_status: aadhaarUploaded,
+      bank_status: bankAdded,
+      all_complete: allComplete,
+      approval_status: worker.status,
+    });
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 
 /**
@@ -801,6 +834,7 @@ module.exports = {
   updateAvailability, updateLocation, getAvailability,
   getNotifications, markNotificationRead, markAllNotificationsRead, deleteNotification,
   getBankDetails, updateBankDetails,
+  getOnboardingStatus,
   getTodayOverview, getOverallStats,
   setIo,
 };
