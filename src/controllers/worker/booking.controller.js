@@ -510,6 +510,8 @@ const getOngoingBooking = async (req, res) => {
       task_description: booking.notes || (booking.Service ? booking.Service.description : '') || 'No description',
       total_amount: parseFloat(booking.total_amount),
       address: booking.Address ? booking.Address.full_address : (booking.address || ''),
+      userLet: booking.Address.latitude,
+      userLng: booking.Address.longitude,
       pickup_address: booking.Address ? booking.Address.full_address : (booking.address || ''),
       distance: distanceStr,
       booking_date: booking.booking_date,
