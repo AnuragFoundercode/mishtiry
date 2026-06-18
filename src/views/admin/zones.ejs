@@ -39,7 +39,14 @@
           </button>
         </div>
       </div>
-      <div class="card-body p-0">
+      <div class="card-body p-0" style="position:relative;">
+        <!-- Search box on map -->
+        <div style="position:absolute;top:10px;left:10px;right:10px;z-index:10;max-width:350px;">
+          <div class="input-group input-group-sm shadow-sm">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="mapSearch" class="form-control border-start-0" placeholder="Search location..." />
+          </div>
+        </div>
         <div id="map" style="height:600px;width:100%;"></div>
       </div>
     </div>
@@ -126,7 +133,22 @@
               <i class="bi bi-cursor-fill text-primary me-2"></i>Draw Zone on Map
             </label>
             <p class="text-muted small mb-3">Click on the map to place markers. Minimum 3 markers required to create a zone.</p>
+            <!-- Search in modal map -->
+            <div class="input-group input-group-sm mb-2">
+              <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+              <input type="text" id="mapModalSearch" class="form-control border-start-0" placeholder="Search location..." />
+            </div>
             <div id="mapModal" class="border rounded" style="height:400px;width:100%;"></div>
+            <!-- Undo / Clear buttons -->
+            <div class="d-flex gap-2 mt-2">
+              <button type="button" class="btn btn-sm btn-outline-warning" onclick="undoLastMarker()">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Undo Last Point
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllMarkers()">
+                <i class="bi bi-trash me-1"></i>Clear All
+              </button>
+              <span class="ms-auto badge bg-light text-dark border align-self-center" id="markerCount">0 points</span>
+            </div>
           </div>
           
           <input type="hidden" name="coordinates" id="coordinates">
@@ -189,7 +211,7 @@
   </div>
 </div>
 
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0mG3CGok9-9RZau5J_VThUP4OTbQ_SFM"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0mG3CGok9-9RZau5J_VThUP4OTbQ_SFM&libraries=places,geometry"></script>
 
 <script>
 let map, mapModal, markers = [], polygon = null, editingZoneId = null, isDrawing = false;
@@ -206,6 +228,48 @@ function initMap() {
     mapTypeControl: true,
     streetViewControl: false,
   });
+
+  // Search box (Places Autocomplete)
+  const searchInput = document.getElementById('mapSearch');
+  const autocomplete = new google.maps.places.Autocomplete(searchInput, {
+    componentRestrictions: { country: 'in' },
+  });
+  autocomplete.bindTo('bounds', map);
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    if (place.geometry && place.geometry.location) {
+      map.setCenter(place.geometry.location);
+      map.setZoom(14);
+    }
+  });
+
+  // Get current location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        if (!existingZones.length) {
+          map.setCenter(loc);
+          map.setZoom(12);
+        }
+        // Blue dot for current location
+        new google.maps.Marker({
+          position: loc,
+          map: map,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 8,
+            fillColor: '#4285F4',
+            fillOpacity: 1,
+            strokeColor: '#fff',
+            strokeWeight: 2,
+          },
+          title: 'Your Location',
+        });
+      },
+      () => {} // silently fail
+    );
+  }
 
   const bounds = new google.maps.LatLngBounds();
   let hasValidZone = false;
@@ -234,21 +298,16 @@ function initMap() {
         map: map,
       });
 
+      // Store polygon for overlap detection
+      zoneData[zone.id].polygon = poly;
+
       // Add label
       const center = getPolygonCenter(path);
       new google.maps.Marker({
         position: center,
         map: map,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 0,
-        },
-        label: {
-          text: zone.name,
-          color: zone.color || '#6c47ff',
-          fontWeight: 'bold',
-          fontSize: '11px',
-        },
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 0 },
+        label: { text: zone.name, color: zone.color || '#6c47ff', fontWeight: 'bold', fontSize: '11px' },
       });
 
       path.forEach(p => bounds.extend(p));
@@ -277,6 +336,37 @@ function initMapModal() {
     mapTypeControl: true,
     streetViewControl: false,
   });
+
+  // Search in modal
+  const searchInput = document.getElementById('mapModalSearch');
+  if (searchInput) {
+    const autocomplete = new google.maps.places.Autocomplete(searchInput, {
+      componentRestrictions: { country: 'in' },
+    });
+    autocomplete.bindTo('bounds', mapModal);
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place.geometry && place.geometry.location) {
+        mapModal.setCenter(place.geometry.location);
+        mapModal.setZoom(14);
+      }
+    });
+  }
+
+  // Current location on modal map
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      mapModal.setCenter(loc);
+      mapModal.setZoom(13);
+      new google.maps.Marker({
+        position: loc,
+        map: mapModal,
+        icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#4285F4', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+        title: 'Your Location',
+      });
+    }, () => {});
+  }
 
   mapModal.addListener('click', (e) => {
     if (isDrawing) addMarkerModal(e.latLng);
@@ -324,6 +414,16 @@ function updatePolygonModal() {
 function updateFormState() {
   const hasMinMarkers = markers.length >= 3;
   document.getElementById('submitBtn').disabled = !hasMinMarkers;
+  const countEl = document.getElementById('markerCount');
+  if (countEl) countEl.textContent = markers.length + ' point' + (markers.length !== 1 ? 's' : '');
+}
+
+function undoLastMarker() {
+  if (!markers.length) return;
+  const last = markers.pop();
+  last.marker.setMap(null);
+  updatePolygonModal();
+  updateFormState();
 }
 
 function removeMarker(index) {
@@ -436,6 +536,31 @@ function handleFormSubmit(event) {
   
   if (markers.length < 3) {
     alert('Minimum 3 markers required');
+    return;
+  }
+
+  // Check for overlap with existing zones
+  const newCoords = markers.map(m => new google.maps.LatLng(m.lat, m.lng));
+  let overlapping = false;
+  let overlapZoneName = '';
+
+  for (const [id, zone] of Object.entries(zoneData)) {
+    if (editingZoneId && parseInt(id) === editingZoneId) continue; // skip self when editing
+    if (!zone.polygon) continue;
+
+    // Check if any point of new zone is inside existing zone
+    for (const point of newCoords) {
+      if (google.maps.geometry.poly.containsLocation(point, zone.polygon)) {
+        overlapping = true;
+        overlapZoneName = zone.name;
+        break;
+      }
+    }
+    if (overlapping) break;
+  }
+
+  if (overlapping) {
+    alert(`Zone overlap detected! This zone overlaps with "${overlapZoneName}". Zones cannot overlap.`);
     return;
   }
   

@@ -90,25 +90,38 @@ const doResetPassword = async (req, res) => {
 
 const dashboard = async (req, res) => {
   try {
-    const [totalUsers, totalWorkers, totalBookings, pendingBookings] = await Promise.all([
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [totalUsers, totalWorkers, totalBookings, pendingBookings, todayBookings, onlineWorkers, pendingWorkers] = await Promise.all([
       User.count({ where: { role: 'user' } }),
       Worker.count(),
       Booking.count(),
       Booking.count({ where: { status: 'pending' } }),
+      Booking.count({ where: { created_at: { [Op.gte]: today, [Op.lt]: tomorrow } } }),
+      Worker.count({ where: { availability: 'online' } }),
+      Worker.count({ where: { status: 'pending' } }),
     ]);
+
     const totalRevenue = await Booking.sum('total_amount', { where: { payment_status: 'paid' } }) || 0;
     const platformRevenue = await Booking.sum('platform_charge', { where: { payment_status: 'paid' } }) || 0;
     const gstCollected = await Booking.sum('gst_amount', { where: { payment_status: 'paid' } }) || 0;
+    const todayRevenue = await Booking.sum('total_amount', { where: { payment_status: 'paid', created_at: { [Op.gte]: today, [Op.lt]: tomorrow } } }) || 0;
+    const completedBookings = await Booking.count({ where: { status: 'completed' } });
+    const cancelledBookings = await Booking.count({ where: { status: 'cancelled' } });
+
     const recentBookings = await Booking.findAll({
-      limit: 5, order: [['created_at', 'DESC']],
-      include: [{ model: User, attributes: ['name', 'mobile'] }, { model: Service, attributes: ['name'] }],
+      limit: 8, order: [['created_at', 'DESC']],
+      include: [{ model: User, attributes: ['name', 'mobile'] }, { model: Service, attributes: ['name'] }, { model: Worker, attributes: ['name'], required: false }],
     });
     const recentWorkers = await Worker.findAll({
       limit: 5, order: [['created_at', 'DESC']],
-      attributes: ['id', 'name', 'phone', 'is_active'],
+      attributes: ['id', 'name', 'phone', 'status', 'availability', 'created_at'],
     });
 
-    // Chart 1: last 6 months booking trend
+    // Chart: last 6 months booking trend
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
     sixMonthsAgo.setDate(1);
@@ -124,13 +137,9 @@ const dashboard = async (req, res) => {
       order: [[sequelize.fn('DATE_FORMAT', sequelize.col('created_at'), '%Y-%m'), 'ASC']],
       raw: true,
     });
-    // Fill missing months
-    const monthLabels = [];
-    const monthCounts = [];
-    const monthRevenue = [];
+    const monthLabels = [], monthCounts = [], monthRevenue = [];
     for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
+      const d = new Date(); d.setMonth(d.getMonth() - i);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       const label = d.toLocaleString('en-IN', { month: 'short', year: '2-digit' });
       const found = monthlyRaw.find(r => r.month === key);
@@ -139,7 +148,7 @@ const dashboard = async (req, res) => {
       monthRevenue.push(found ? parseFloat(found.revenue || 0).toFixed(0) : 0);
     }
 
-    // Chart 2: booking status breakdown
+    // Status breakdown
     const statusRaw = await Booking.findAll({
       attributes: ['status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
       group: ['status'], raw: true,
@@ -149,8 +158,10 @@ const dashboard = async (req, res) => {
 
     res.render('admin/dashboard', {
       title: 'Dashboard', page: 'dashboard',
-      totalUsers, totalWorkers, totalBookings, pendingBookings,
-      totalRevenue, platformRevenue, gstCollected, recentBookings, recentWorkers,
+      totalUsers, totalWorkers, totalBookings, pendingBookings, todayBookings,
+      onlineWorkers, pendingWorkers, completedBookings, cancelledBookings,
+      totalRevenue, platformRevenue, gstCollected, todayRevenue,
+      recentBookings, recentWorkers,
       monthLabels, monthCounts, monthRevenue,
       statusLabels, statusCounts,
       adminName: req.session.adminName,
@@ -704,10 +715,18 @@ const workerDetail = async (req, res) => {
     const totalAdminDue = assignedBookings
       .filter(b => b.payment_method === 'cod' && b.payment_status === 'paid')
       .reduce((s, b) => s + parseFloat(b.admin_due || 0), 0);
+
+    // Profit calculations
+    const completedBookings = assignedBookings.filter(b => b.status === 'completed' && b.payment_status === 'paid');
+    const totalRevenue = completedBookings.reduce((s, b) => s + parseFloat(b.total_amount || 0), 0);
+    const platformProfit = completedBookings.reduce((s, b) => s + parseFloat(b.platform_charge || 0) + parseFloat(b.gst_amount || 0), 0);
+    const workerProfit = totalRevenue - platformProfit;
+
     const allZones = await Zone.findAll({ where: { is_active: true }, attributes: ['id', 'name'], order: [['name', 'ASC']] });
     const allServices = await Service.findAll({ where: { is_active: true }, attributes: ['id', 'name'], order: [['name', 'ASC']] });
     res.render('admin/worker-detail', {
       title: worker.name, page: 'workers', worker, assignedBookings, totalCollected, totalAdminDue,
+      totalRevenue, platformProfit, workerProfit,
       allZones, allServices,
       adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error'),
     });
