@@ -248,6 +248,42 @@
       </div>
     </div>
 
+    <!-- Payout Requests -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <small class="fw-semibold"><i class="bi bi-wallet2 me-2 text-primary"></i>Payout Requests</small>
+        <% if(parseFloat(worker.admin_due||0) > 0){ %>
+          <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearDueModal" style="font-size:.72rem;">
+            <i class="bi bi-cash-coin me-1"></i>Clear Due ₹<%= parseFloat(worker.admin_due||0).toFixed(0) %>
+          </button>
+        <% } %>
+      </div>
+      <div class="card-body p-3">
+        <% if(typeof payoutRequests !== 'undefined' && payoutRequests.length){ %>
+          <div class="table-responsive">
+            <table class="table table-sm mb-0" style="font-size:.75rem;">
+              <thead class="table-light"><tr><th>#</th><th>Amount</th><th>Status</th><th>Note</th><th>Date</th></tr></thead>
+              <tbody>
+              <% const psc={pending:'warning',approved:'info',paid:'success',rejected:'danger'}; %>
+              <% payoutRequests.forEach(p => { %>
+                <tr>
+                  <td class="text-muted">#<%= p.id %></td>
+                  <td class="fw-semibold text-success">₹<%= parseFloat(p.amount).toFixed(2) %></td>
+                  <td><span class="badge bg-<%= psc[p.status]||'secondary' %>" style="font-size:.6rem;"><%= p.status %></span></td>
+                  <td class="text-muted"><%= p.admin_note || p.note || '—' %></td>
+                  <td class="text-muted"><%= new Date(p.created_at).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) %></td>
+                </tr>
+              <% }) %>
+              </tbody>
+            </table>
+          </div>
+        <% } else { %>
+          <p class="text-muted small mb-0 text-center py-2">No payout requests yet</p>
+        <% } %>
+        <a href="/admin/payout-requests" class="btn btn-sm btn-light w-100 mt-2" style="font-size:.75rem;">View All Payout Requests</a>
+      </div>
+    </div>
+
     <!-- Bookings Table -->
     <div class="card border-0 shadow-sm">
       <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
@@ -288,3 +324,32 @@
 </div>
 
 <%- include('partials/footer') %>
+
+<!-- Clear Due Modal -->
+<div class="modal fade" id="clearDueModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-cash-coin me-2 text-danger"></i>Clear Admin Due</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="/admin/workers/<%= worker.id %>/clear-due">
+        <div class="modal-body">
+          <p class="mb-3">Current due: <strong class="text-danger">₹<%= parseFloat(worker.admin_due||0).toFixed(2) %></strong></p>
+          <div class="mb-1">
+            <label class="form-label">Amount to Clear</label>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <input type="number" name="amount" class="form-control" step="0.01" min="1" max="<%= parseFloat(worker.admin_due||0) %>" placeholder="Leave blank to clear full due">
+            </div>
+            <small class="text-muted">Leave blank to clear full amount</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger" onclick="return confirm('Clear this due?')">Clear Due</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

@@ -44,4 +44,9 @@ router.put('/coupons/:id', couponCtrl.updateCoupon);
 router.delete('/coupons/:id', couponCtrl.deleteCoupon);
 router.patch('/coupons/:id/toggle', couponCtrl.toggleCoupon);
 
+// Worker payout & due management
+router.get('/workers/payout-requests', adminCtrl.getWorkerPayoutRequests);
+router.patch('/workers/payout-requests/:id', adminCtrl.processPayoutRequest);
+router.patch('/workers/:id/clear-due', adminCtrl.clearWorkerAdminDue);
+
 module.exports = router;

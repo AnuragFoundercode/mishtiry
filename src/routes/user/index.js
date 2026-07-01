@@ -38,6 +38,7 @@ router.get('/bookings/charges-preview', ...auth, bookingCtrl.previewCharges);
 router.post('/bookings', ...auth, bookingCtrl.createBooking);
 router.get('/bookings', ...auth, bookingCtrl.getMyBookings);
 router.get('/bookings/:id', ...auth, bookingCtrl.getBookingDetail);
+router.get('/bookings/:id/live', ...auth, bookingCtrl.getBookingDetailSSE);
 router.get('/bookings/:id/payment-verify', ...auth, bookingCtrl.verifyPayment);
 router.post('/bookings/:id/cancel', ...auth, bookingCtrl.cancelBooking);
 

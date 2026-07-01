@@ -7,6 +7,8 @@ const Booking = require('../../models/booking.model');
 const Category = require('../../models/category.model');
 const Policy = require('../../models/policy.model');
 const Zone = require('../../models/zone.model');
+const Worker = require('../../models/worker.model');
+const WorkerPayoutRequest = require('../../models/worker_payout_request.model');
 const { SubscriptionPlan } = require('../../models/subscription.model');
 const Notification = require('../../models/notification.model');
 const PlatformSetting = require('../../models/platform_setting.model');
@@ -373,6 +375,117 @@ const deleteZone = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/admin/workers/payout-requests
+ * List all payout requests with worker info
+ * Query: ?status=pending|approved|rejected|paid
+ */
+const getWorkerPayoutRequests = async (req, res) => {
+  try {
+    const where = {};
+    if (req.query.status) where.status = req.query.status;
+
+    const requests = await WorkerPayoutRequest.findAll({
+      where,
+      include: [{
+        model: Worker,
+        attributes: ['id', 'name', 'phone', 'bank_name', 'holder_name', 'account_number', 'ifsc_code'],
+      }],
+      order: [['created_at', 'DESC']],
+    });
+    return success(res, { requests });
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+/**
+ * PATCH /api/admin/workers/payout-requests/:id
+ * Approve, reject, or mark as paid
+ * Body: { status: 'approved'|'rejected'|'paid', admin_note? }
+ */
+const processPayoutRequest = async (req, res) => {
+  try {
+    const { status, admin_note } = req.body;
+    if (!['approved', 'rejected', 'paid'].includes(status)) {
+      return error(res, 'Invalid status. Allowed: approved, rejected, paid', 400);
+    }
+
+    const request = await WorkerPayoutRequest.findByPk(req.params.id);
+    if (!request) return error(res, 'Payout request not found', 404);
+    if (request.status === 'paid') return error(res, 'Request already paid', 400);
+
+    // If rejecting, refund wallet
+    if (status === 'rejected' && request.status !== 'rejected') {
+      await Worker.increment('wallet', {
+        by: parseFloat(request.amount),
+        where: { id: request.worker_id },
+      });
+    }
+
+    await request.update({
+      status,
+      admin_note: admin_note || null,
+      processed_at: new Date(),
+    });
+
+    // Notify worker
+    await Notification.create({
+      worker_id: request.worker_id,
+      title: 'Payout Update',
+      body: `Your payout request of ₹${request.amount} has been ${status}.`,
+      type: 'payment',
+      data: { payout_request_id: request.id, status },
+    });
+
+    return success(res, { request }, `Payout request ${status}`);
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+/**
+ * PATCH /api/admin/workers/:id/clear-due
+ * Admin clears a worker's admin_due (worker paid cash to admin)
+ * Body: { amount?, note? } — if amount omitted, clears full due
+ */
+const clearWorkerAdminDue = async (req, res) => {
+  try {
+    const worker = await Worker.findByPk(req.params.id, {
+      attributes: ['id', 'name', 'admin_due'],
+    });
+    if (!worker) return error(res, 'Worker not found', 404);
+
+    const currentDue = parseFloat(worker.admin_due || 0);
+    if (currentDue <= 0) return error(res, 'No admin due pending for this worker', 400);
+
+    const clearAmount = req.body.amount ? parseFloat(req.body.amount) : currentDue;
+    if (clearAmount <= 0 || clearAmount > currentDue) {
+      return error(res, `Amount must be between 1 and ₹${currentDue}`, 400);
+    }
+
+    const newDue = parseFloat((currentDue - clearAmount).toFixed(2));
+    await Worker.update({ admin_due: newDue }, { where: { id: worker.id } });
+
+    await Notification.create({
+      worker_id: worker.id,
+      title: 'Due Cleared',
+      body: `₹${clearAmount} admin due has been cleared. Remaining due: ₹${newDue}`,
+      type: 'payment',
+      data: { cleared_amount: clearAmount, remaining_due: newDue },
+    });
+
+    return success(res, {
+      worker_id: worker.id,
+      cleared_amount: clearAmount,
+      previous_due: currentDue,
+      remaining_due: newDue,
+    }, 'Admin due cleared');
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
 module.exports = {
   getDashboard, approveVendor, blockUser, sendBroadcastNotification, manageCategory,
   getPlatformSettings, updatePlatformSettings,
@@ -381,4 +494,5 @@ module.exports = {
   getPolicies, createPolicy, updatePolicy, deletePolicy,
   getZones, createZone, updateZone, deleteZone,
   createVendor,
+  getWorkerPayoutRequests, processPayoutRequest, clearWorkerAdminDue,
 };

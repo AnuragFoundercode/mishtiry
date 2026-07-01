@@ -51,6 +51,10 @@ router.post('/bookings/:id/collect-cod', authenticateWorker, workerCtrl.collectC
 router.post('/bookings/:id/addons', authenticateWorker, workerCtrl.addBookingAddon);
 router.get('/bookings/:id/addons', authenticateWorker, workerCtrl.getBookingAddons);
 
+// Payout
+router.post('/payout/request', authenticateWorker, workerCtrl.requestPayout);
+router.get('/payout/requests', authenticateWorker, workerCtrl.getMyPayoutRequests);
+
 // Notifications
 router.get('/notifications', authenticateWorker, workerCtrl.getNotifications);
 router.patch('/notifications/:id/read', authenticateWorker, workerCtrl.markNotificationRead);

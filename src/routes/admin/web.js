@@ -105,4 +105,11 @@ router.post('/testimonials', guard, upload.single('image'), ctrl.createTestimoni
 router.post('/testimonials/:id/update', guard, upload.single('image'), ctrl.updateTestimonial);
 router.post('/testimonials/:id/delete', guard, ctrl.deleteTestimonial);
 
+// Payout Requests
+router.get('/payout-requests', guard, ctrl.payoutRequests);
+router.post('/payout-requests/:id/process', guard, ctrl.processPayoutWeb);
+
+// Clear worker admin due (from worker-detail page)
+router.post('/workers/:id/clear-due', guard, ctrl.clearDueWeb);
+
 module.exports = router;

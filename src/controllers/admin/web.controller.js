@@ -4,6 +4,7 @@ const {
   User, Booking, Category, Service, Notification,
   Policy, Zone, Worker, Coupon, CouponUsage,
 } = require('../../models/index');
+const WorkerPayoutRequest = require('../../models/worker_payout_request.model');
 const PlatformSetting = require('../../models/platform_setting.model');
 const AppSetting = require('../../models/app_setting.model');
 const Testimonial = require('../../models/testimonial.model');
@@ -724,10 +725,15 @@ const workerDetail = async (req, res) => {
 
     const allZones = await Zone.findAll({ where: { is_active: true }, attributes: ['id', 'name'], order: [['name', 'ASC']] });
     const allServices = await Service.findAll({ where: { is_active: true }, attributes: ['id', 'name'], order: [['name', 'ASC']] });
+    const payoutRequests = await WorkerPayoutRequest.findAll({
+      where: { worker_id: worker.id },
+      order: [['created_at', 'DESC']],
+      limit: 10,
+    });
     res.render('admin/worker-detail', {
       title: worker.name, page: 'workers', worker, assignedBookings, totalCollected, totalAdminDue,
       totalRevenue, platformProfit, workerProfit,
-      allZones, allServices,
+      allZones, allServices, payoutRequests,
       adminName: req.session.adminName, success: req.flash('success'), error: req.flash('error'),
     });
   } catch (e) { res.render('admin/error', { message: e.message }); }
@@ -1120,6 +1126,87 @@ const deleteTestimonial = async (req, res) => {
   } catch (e) { req.flash('error', e.message); res.redirect('/admin/testimonials'); }
 };
 
+// ─── Payout Requests ──────────────────────────────────────────────────────────
+
+const payoutRequests = async (req, res) => {
+  try {
+    const { status = '' } = req.query;
+    const where = {};
+    if (status) where.status = status;
+
+    const requests = await WorkerPayoutRequest.findAll({
+      where,
+      include: [{ model: Worker, attributes: ['id', 'name', 'phone', 'bank_name', 'holder_name', 'account_number', 'ifsc_code'] }],
+      order: [['created_at', 'DESC']],
+    });
+
+    const counts = {
+      all: await WorkerPayoutRequest.count(),
+      pending: await WorkerPayoutRequest.count({ where: { status: 'pending' } }),
+      approved: await WorkerPayoutRequest.count({ where: { status: 'approved' } }),
+      paid: await WorkerPayoutRequest.count({ where: { status: 'paid' } }),
+      rejected: await WorkerPayoutRequest.count({ where: { status: 'rejected' } }),
+    };
+
+    res.render('admin/payout-requests', {
+      title: 'Payout Requests', page: 'payout-requests',
+      requests, counts, status,
+      adminName: req.session.adminName,
+      success: req.flash('success'), error: req.flash('error'),
+    });
+  } catch (e) { res.render('admin/error', { message: e.message }); }
+};
+
+const processPayoutWeb = async (req, res) => {
+  try {
+    const { action, admin_note } = req.body;
+    if (!['approved', 'rejected', 'paid'].includes(action)) {
+      req.flash('error', 'Invalid action'); return res.redirect('/admin/payout-requests');
+    }
+    const request = await WorkerPayoutRequest.findByPk(req.params.id);
+    if (!request) { req.flash('error', 'Request not found'); return res.redirect('/admin/payout-requests'); }
+    if (request.status === 'paid') { req.flash('error', 'Already paid'); return res.redirect('/admin/payout-requests'); }
+
+    if (action === 'rejected' && request.status !== 'rejected') {
+      await Worker.increment('wallet', { by: parseFloat(request.amount), where: { id: request.worker_id } });
+    }
+
+    await request.update({ status: action, admin_note: admin_note || null, processed_at: new Date() });
+
+    await Notification.create({
+      worker_id: request.worker_id,
+      title: 'Payout Update',
+      body: `Your payout request of ₹${request.amount} has been ${action}.`,
+      type: 'payment',
+      data: { payout_request_id: request.id, status: action },
+    });
+
+    req.flash('success', `Payout request ${action}`);
+    res.redirect('/admin/payout-requests');
+  } catch (e) { req.flash('error', e.message); res.redirect('/admin/payout-requests'); }
+};
+
+const clearDueWeb = async (req, res) => {
+  try {
+    const worker = await Worker.findByPk(req.params.id);
+    if (!worker) { req.flash('error', 'Worker not found'); return res.redirect('/admin/payout-requests'); }
+    const currentDue = parseFloat(worker.admin_due || 0);
+    if (currentDue <= 0) { req.flash('error', 'No due pending'); return res.redirect(`/admin/workers/${req.params.id}`); }
+    const clearAmount = req.body.amount ? parseFloat(req.body.amount) : currentDue;
+    const newDue = parseFloat((currentDue - clearAmount).toFixed(2));
+    await Worker.update({ admin_due: newDue }, { where: { id: worker.id } });
+    await Notification.create({
+      worker_id: worker.id,
+      title: 'Due Cleared',
+      body: `₹${clearAmount} admin due cleared. Remaining: ₹${newDue}`,
+      type: 'payment',
+      data: { cleared_amount: clearAmount, remaining_due: newDue },
+    });
+    req.flash('success', `₹${clearAmount} due cleared for ${worker.name}`);
+    res.redirect(`/admin/workers/${req.params.id}`);
+  } catch (e) { req.flash('error', e.message); res.redirect(`/admin/workers/${req.params.id}`); }
+};
+
 module.exports = {
   showLogin, doLogin, doLogout,
   showForgotPassword, doForgotPassword, showResetPassword, doResetPassword,
@@ -1138,4 +1225,5 @@ module.exports = {
   coupons, createCouponWeb, updateCouponWeb, deleteCouponWeb, toggleCouponWeb, couponDetail,
   appSettings, updateAppSettings,
   testimonials, createTestimonial, updateTestimonial, deleteTestimonial,
+  payoutRequests, processPayoutWeb, clearDueWeb,
 };

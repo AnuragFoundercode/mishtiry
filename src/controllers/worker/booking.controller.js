@@ -7,6 +7,7 @@ const Zone = require('../../models/zone.model');
 const WorkerService = require('../../models/worker_service.model');
 const WorkerAvailabilityLog = require('../../models/worker_availability_log.model');
 const Notification = require('../../models/notification.model');
+const WorkerPayoutRequest = require('../../models/worker_payout_request.model');
 const { success, error } = require('../../helpers/response.helper');
 const { emitToUser } = require('../../sockets/socket.handler');
 
@@ -510,8 +511,6 @@ const getOngoingBooking = async (req, res) => {
       task_description: booking.notes || (booking.Service ? booking.Service.description : '') || 'No description',
       total_amount: parseFloat(booking.total_amount),
       address: booking.Address ? booking.Address.full_address : (booking.address || ''),
-      userLet: booking.Address.latitude,
-      userLng: booking.Address.longitude,
       pickup_address: booking.Address ? booking.Address.full_address : (booking.address || ''),
       distance: distanceStr,
       booking_date: booking.booking_date,
@@ -691,6 +690,76 @@ const getOverallStats = async (req, res) => {
   }
 };
 
+// ─── PAYOUT REQUESTS ─────────────────────────────────────────────────────────
+
+/**
+ * POST /api/worker/payout/request
+ * Worker requests a payout from their wallet
+ * Body: { amount, note? }
+ */
+const requestPayout = async (req, res) => {
+  try {
+    const { amount, note } = req.body;
+    const requestedAmount = parseFloat(amount);
+    if (!requestedAmount || requestedAmount <= 0) return error(res, 'Valid amount required', 400);
+
+    const worker = await Worker.findByPk(req.worker.id, {
+      attributes: ['id', 'wallet', 'bank_name', 'account_number', 'ifsc_code'],
+    });
+
+    if (!worker.bank_name || !worker.account_number || !worker.ifsc_code) {
+      return error(res, 'Please add bank details before requesting a payout', 400);
+    }
+
+    if (parseFloat(worker.wallet) < requestedAmount) {
+      return error(res, `Insufficient wallet balance. Available: ₹${worker.wallet}`, 400);
+    }
+
+    // Check no pending request already exists
+    const existing = await WorkerPayoutRequest.findOne({
+      where: { worker_id: req.worker.id, status: 'pending' },
+    });
+    if (existing) return error(res, 'You already have a pending payout request', 400);
+
+    // Deduct from wallet and create request
+    await Worker.update(
+      { wallet: parseFloat((parseFloat(worker.wallet) - requestedAmount).toFixed(2)) },
+      { where: { id: req.worker.id } }
+    );
+
+    const request = await WorkerPayoutRequest.create({
+      worker_id: req.worker.id,
+      amount: requestedAmount,
+      note: note || null,
+    });
+
+    return success(res, { request }, 'Payout request submitted', 201);
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
+/**
+ * GET /api/worker/payout/requests
+ * Worker's payout request history
+ */
+const getMyPayoutRequests = async (req, res) => {
+  try {
+    const requests = await WorkerPayoutRequest.findAll({
+      where: { worker_id: req.worker.id },
+      order: [['created_at', 'DESC']],
+    });
+    const worker = await Worker.findByPk(req.worker.id, { attributes: ['wallet', 'admin_due'] });
+    return success(res, {
+      wallet: parseFloat(worker.wallet || 0),
+      admin_due: parseFloat(worker.admin_due || 0),
+      requests,
+    });
+  } catch (err) {
+    return error(res, err.message);
+  }
+};
+
 // ─── BANK DETAILS ─────────────────────────────────────────────────────────────
 
 /**
@@ -838,5 +907,6 @@ module.exports = {
   getBankDetails, updateBankDetails,
   getOnboardingStatus,
   getTodayOverview, getOverallStats,
+  requestPayout, getMyPayoutRequests,
   setIo,
 };

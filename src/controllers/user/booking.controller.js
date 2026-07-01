@@ -326,6 +326,69 @@ const getBookingDetail = async (req, res) => {
   } catch (err) { return error(res, err.message); }
 };
 
+// ─── GET /api/user/bookings/:id/live (SSE - Server Sent Events) ──────────────
+// Real-time booking detail stream — polls every 3 seconds and pushes changes
+const getBookingDetailSSE = async (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+
+  let lastData = '';
+  const bookingId = req.params.id;
+  const userId = req.user.id;
+
+  const sendUpdate = async () => {
+    try {
+      const booking = await Booking.findOne({
+        where: { id: bookingId, user_id: userId },
+        include: [
+          { model: Service, include: [{ model: require('../../models/category.model'), attributes: ['id', 'name'] }] },
+          { model: Worker, attributes: ['id', 'name', 'phone'], required: false },
+          { model: Address, attributes: ['id', 'label', 'full_address', 'landmark', 'latitude', 'longitude', 'city', 'pincode'], required: false },
+          { model: Coupon, attributes: ['id', 'code', 'title', 'discount_type', 'discount_value'], required: false },
+        ],
+      });
+
+      if (!booking) {
+        res.write('event: error\ndata: {"message":"Booking not found"}\n\n');
+        return;
+      }
+
+      const BookingAddonModel = require('../../models/booking_addon.model');
+      const addons = await BookingAddonModel.findAll({
+        where: { booking_id: booking.id },
+        attributes: ['id', 'name', 'price', 'status', 'created_at'],
+        order: [['created_at', 'ASC']],
+      });
+      const result = booking.toJSON();
+      result.addons = addons;
+
+      const currentData = JSON.stringify(result);
+      // Only send if data changed
+      if (currentData !== lastData) {
+        lastData = currentData;
+        res.write(`data: ${currentData}\n\n`);
+      }
+    } catch (e) {
+      res.write(`event: error\ndata: {"message":"${e.message}"}\n\n`);
+    }
+  };
+
+  // Send immediately
+  await sendUpdate();
+
+  // Poll every 3 seconds
+  const interval = setInterval(sendUpdate, 3000);
+
+  // Clean up on disconnect
+  req.on('close', () => {
+    clearInterval(interval);
+    res.end();
+  });
+};
+
 // ─── POST /api/user/bookings/:id/cancel ──────────────────────────────────────
 const cancelBooking = async (req, res) => {
   try {
@@ -418,4 +481,4 @@ const listCoupons = async (req, res) => {
   } catch (err) { return error(res, err.message); }
 };
 
-module.exports = { createBooking, getMyBookings, getBookingDetail, previewCharges, verifyPayment, cancelBooking, applyCoupon, listCoupons, setIo };
+module.exports = { createBooking, getMyBookings, getBookingDetail, getBookingDetailSSE, previewCharges, verifyPayment, cancelBooking, applyCoupon, listCoupons, setIo };
