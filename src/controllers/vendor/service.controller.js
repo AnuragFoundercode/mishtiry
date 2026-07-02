@@ -11,7 +11,7 @@ const checkServiceLimit = async (vendorId) => {
     where: { vendor_id: vendorId, status: 'active' },
     include: [{ model: SubscriptionPlan }],
   });
-  const limit = activeSub?.SubscriptionPlan?.service_limit ?? 5; // default basic limit
+  const limit = activeSub?.SubscriptionPlan?.service_limit ?? 3;  // default basic limit
   return { count, limit, canAdd: count < limit };
 };
 
